@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: reops-umami-consumer-test
+  kafka:
+    topic: test-topic
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    consumer:
+      group-id: test-group
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+
+reops:
+  umami:
+    url: http://localhost:${wiremock.server.port}
