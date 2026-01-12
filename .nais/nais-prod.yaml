@@ -34,6 +34,8 @@ spec:
     outbound:
       rules:
         - application: umami-dev
+      external:
+        - host: nav-prod-kafka-nav-prod.aivencloud.com
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: kubernetes
