@@ -1,5 +1,7 @@
 package no.nav.reops.event
 
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
 import no.nav.reops.filter.FilterService
 import no.nav.reops.umami.UmamiService
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -13,9 +15,20 @@ import org.springframework.stereotype.Service
 @Service
 class KafkaService(
     private val filterService: FilterService,
-    private val umamiService: UmamiService
-){
+    private val umamiService: UmamiService,
+    meterRegistry: MeterRegistry
+) {
     private val logger: Logger = LoggerFactory.getLogger(KafkaService::class.java)
+
+    private val kafkaEventsSuccess: Counter =
+        Counter.builder("kafka_events_processed_total")
+            .tag("result", "success")
+            .register(meterRegistry)
+
+    private val kafkaEventsFailure: Counter =
+        Counter.builder("kafka_events_processed_total")
+            .tag("result", "failure")
+            .register(meterRegistry)
 
     @KafkaListener(
         topics = ["\${spring.kafka.topic}"],
@@ -29,7 +42,15 @@ class KafkaService(
         record: ConsumerRecord<String, Event>
     ) {
         logger.info("Received event with key: $key at offset: ${record.offset()} in partition: ${record.partition()}")
-        val filteredEvent = filterService.filterEvent(event)
-        umamiService.sendEvent(filteredEvent, userAgent)
+
+        try {
+            val filteredEvent = filterService.filterEvent(event)
+            umamiService.sendEvent(filteredEvent, userAgent)
+            kafkaEventsSuccess.increment()
+        } catch (ex: Exception) {
+            kafkaEventsFailure.increment()
+            logger.error("Failed processing kafka event key=$key offset=${record.offset()} partition=${record.partition()}", ex)
+            throw ex
+        }
     }
 }
