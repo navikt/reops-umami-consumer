@@ -17,4 +17,4 @@ spring:
 
 reops:
   umami:
-    url: http://localhost:3000
+    url: https://umami-dev.ansatt.nav.no
