@@ -15,11 +15,9 @@ spec:
     path: /internal/health
     initialDelay: 5
   replicas:
-    min: 2
+    min: 1
     max: 4
     cpuThresholdPercentage: 80
-#  ingresses:
-#    - "https://something.nav.no"
   prometheus:
     enabled: true
     path: /internal/prometheus
@@ -29,9 +27,16 @@ spec:
       memory: 1024Mi
     requests:
       cpu: "50m"
-      memory: 256Mi
+      memory: 512Mi
   kafka:
     pool: nav-prod
+  accessPolicy:
+    outbound:
+      external:
+        - host: nav-prod-kafka-nav-prod.aivencloud.com
+        - host: umami-dev.ansatt.nav.no
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: kubernetes
+    - name: REOPS_UMAMI_URL
+      value: "https://umami-dev.ansatt.nav.no"

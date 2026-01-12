@@ -17,4 +17,4 @@ spring:
 
 reops:
   umami:
-    url: https://umami-dev.ansatt.nav.no
+    url: ${REOPS_UMAMI_URL}

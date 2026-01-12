@@ -18,8 +18,6 @@ spec:
     min: 1
     max: 4
     cpuThresholdPercentage: 80
-  ingresses:
-    - "https://reops-umami-consumer.intern.dev.nav.no"
   prometheus:
     enabled: true
     path: /internal/prometheus
@@ -40,3 +38,5 @@ spec:
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: kubernetes
+    - name: REOPS_UMAMI_URL
+      value: "https://umami-dev.ansatt.nav.no"
