@@ -2,6 +2,7 @@ package no.nav.reops.umami
 
 import no.nav.reops.event.Event
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -23,8 +24,18 @@ class UmamiService(
                 .header("User-Agent", userAgent)
                 .bodyValue(event)
                 .retrieve()
-                .bodyToMono<Void>()
-                .onErrorResume { ex: Throwable ->
+                .onStatus(HttpStatusCode::isError) { resp ->
+                    resp.bodyToMono<String>()
+                        .defaultIfEmpty("")
+                        .flatMap { body ->
+                            logger.error("Umami responded with status=${resp.statusCode().value()} body=$body")
+                            Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
+                        }
+                }
+                .bodyToMono<String>()
+                .defaultIfEmpty("")
+                .doOnNext { body -> logger.info("Umami response body=$body") }
+                .onErrorResume { ex ->
                     logger.error("Failed to send event to Umami", ex)
                     Mono.empty()
                 }
