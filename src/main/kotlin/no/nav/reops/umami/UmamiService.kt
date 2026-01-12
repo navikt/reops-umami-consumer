@@ -7,32 +7,30 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
+import java.time.Duration
 
 @Service
 class UmamiService(
     private val umamiClient: WebClient
 ) {
-
     private val logger = LoggerFactory.getLogger(UmamiService::class.java)
 
     fun sendEvent(event: Event, userAgent: String) {
-        umamiClient.post()
-            .uri("/api/send")
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("User-Agent", userAgent)
-            .bodyValue(event)
-            .retrieve()
-            .bodyToMono<String>()
-            .doOnNext { resp ->
-                logger.info("Umami response: {}", resp)
-            }
-            .onErrorResume { ex ->
-                logger.error("Failed to send event to Umami", ex)
-                if (ex is org.springframework.web.reactive.function.client.WebClientResponseException) {
-                    logger.warn("Umami error body: {}", ex.responseBodyAsString)
+        try {
+            umamiClient.post()
+                .uri("/api/send")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("User-Agent", userAgent)
+                .bodyValue(event)
+                .retrieve()
+                .bodyToMono<Void>()
+                .onErrorResume { ex: Throwable ->
+                    logger.error("Failed to send event to Umami", ex)
+                    Mono.empty()
                 }
-                Mono.empty()
-            }
-            .subscribe()
+                .block(Duration.ofSeconds(5))
+        } catch (ex: Exception) {
+            logger.error("Failed to send event to Umami", ex)
+        }
     }
 }

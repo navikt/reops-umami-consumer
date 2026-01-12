@@ -32,201 +32,167 @@ class FilterService(
 
     private fun redact(value: String): String {
         var current = value
-        redactionRules.forEach { rule ->
-            val matches = rule.regex.findAll(current).count()
-            if (matches > 0) {
-                rule.counter.increment(matches.toDouble())
-                current = if (rule.preserve) {
-                    current
+        for (rule in redactionRules) {
+            val found = rule.regex.containsMatchIn(current)
+            if (found) {
+                if (!rule.preserve) {
+                    val replaced = rule.regex.replace(current, "[REDACTED]")
+                    if (replaced !== current) {
+                        rule.counter.increment()
+                        current = replaced
+                    }
                 } else {
-                    rule.regex.replace(current, "[REDACTED]")
+                    rule.counter.increment()
                 }
             }
         }
-
         return current
     }
 
     private val redactionRules: List<RedactionRule> = listOf(
         RedactionRule(
             name = "keep",
-            regex = keepRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "keep")
-                .register(meterRegistry),
+            regex = KEEP_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "keep").register(meterRegistry),
             preserve = true
         ),
         RedactionRule(
             name = "fnr_local",
-            regex = fnrLocalRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "fnr_local")
-                .register(meterRegistry),
+            regex = FNR_LOCAL_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "fnr_local").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "preserve_url",
-            regex = preserveUrlRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "preserve_url")
-                .register(meterRegistry),
+            regex = PRESERVE_URL_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "preserve_url").register(meterRegistry),
             preserve = true
         ),
         RedactionRule(
             name = "filepath",
-            regex = filepathRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "filepath")
-                .register(meterRegistry),
+            regex = FILEPATH_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "filepath").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "fnr",
-            regex = fnrRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "fnr")
-                .register(meterRegistry),
+            regex = FNR_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "fnr").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "navident",
-            regex = navidentRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "navident")
-                .register(meterRegistry),
+            regex = NAVIDENT_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "navident").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "email",
-            regex = emailRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "email")
-                .register(meterRegistry),
+            regex = EMAIL_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "email").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "ip",
-            regex = ipRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "ip")
-                .register(meterRegistry),
+            regex = IP_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "ip").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "phone",
-            regex = phoneRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "phone")
-                .register(meterRegistry),
+            regex = PHONE_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "phone").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "name",
-            regex = nameRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "name")
-                .register(meterRegistry),
+            regex = NAME_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "name").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "address",
-            regex = addressRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "address")
-                .register(meterRegistry),
+            regex = ADDRESS_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "address").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "secret_address",
-            regex = secretAddressRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "secret_address")
-                .register(meterRegistry),
+            regex = SECRET_ADDRESS_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "secret_address").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "account",
-            regex = accountRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "account")
-                .register(meterRegistry),
+            regex = ACCOUNT_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "account").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "org_number",
-            regex = orgNumberRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "org_number")
-                .register(meterRegistry),
+            regex = ORG_NUMBER_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "org_number").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "license_plate",
-            regex = licensePlateRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "license_plate")
-                .register(meterRegistry),
+            regex = LICENSE_PLATE_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "license_plate").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "search",
-            regex = searchRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "search")
-                .register(meterRegistry),
+            regex = SEARCH_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "search").register(meterRegistry),
             preserve = false
         ),
         RedactionRule(
             name = "uuid_preserve",
-            regex = uuidPreserveRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "uuid_preserve")
-                .register(meterRegistry),
+            regex = UUID_PRESERVE_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "uuid_preserve").register(meterRegistry),
             preserve = true
         ),
         RedactionRule(
             name = "url_preserve",
-            regex = urlPreserveRegex(),
-            counter = Counter.builder("redactions_total")
-                .tag("rule", "url_preserve")
-                .register(meterRegistry),
+            regex = URL_PRESERVE_REGEX,
+            counter = Counter.builder("redactions_total").tag("rule", "url_preserve").register(meterRegistry),
             preserve = true
         )
     )
 
-    fun keepRegex(): Regex = Regex("((nav|test)[0-9]{6})")
-    fun fnrLocalRegex(): Regex = Regex("\\b\\d{6}\\d{5}\\b")
-    fun preserveUrlRegex(): Regex = Regex("https?://[A-Za-z0-9._\\-]+(?:\\.[A-Za-z0-9._\\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._\\-/%?&=]*)?")
-    fun fnrRegex(): Regex = Regex("(?<!\\d)\\d{11}(?!\\d)")
-    fun navidentRegex(): Regex = Regex("(?<![a-zA-Z0-9])[a-zA-Z]\\d{6}(?!\\d)")
-    fun emailRegex(): Regex = Regex("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
-    fun ipRegex(): Regex = Regex("(?<!\\d)\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?!\\d)")
-    fun phoneRegex(): Regex = Regex("(?<!\\d)[2-9]\\d{7}(?!\\d)")
-    fun nameRegex(): Regex = Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}\\s[A-ZÆØÅ][a-zæøå]{1,20}(?:\\s[A-ZÆØÅ][a-zæøå]{1,20})?\\b")
-    fun addressRegex(): Regex = Regex("\\b\\d{4}\\s[A-ZÆØÅ][A-ZÆØÅa-zæøå]+(?:\\s[A-ZÆØÅa-zæøå]+)*\\b")
-    fun secretAddressRegex(): Regex = Regex("(?i)hemmelig(?:%20|\\s+)(?:20\\s*%(?:%20|\\s+))?adresse")
-    fun accountRegex(): Regex = Regex("(?<!\\d)\\d{4}\\.?\\d{2}\\.?\\d{5}(?!\\d)")
-    fun orgNumberRegex(): Regex = Regex("(?<!\\d)\\d{9}(?!\\d)")
-    fun licensePlateRegex(): Regex = Regex("(?<![a-zA-Z])[A-Z]{2}\\s?\\d{5}(?!\\d)")
-    fun searchRegex(): Regex = Regex("[?&](?:q|query|search|k|ord)=[^&]+")
-    fun uuidPreserveRegex(): Regex = Regex("(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b")
-    fun urlPreserveRegex(): Regex = Regex(
-        pattern = """(?x)
-        # URLs with http/https protocol
-        https?://[A-Za-z0-9._\-]+(?:\.[A-Za-z0-9._\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._/%?&=-]*)?
-        |
-        # Domain-like patterns (without protocol) - must have a TLD
-        # Use negative lookbehind to avoid matching email domains (no @ before)
-        (?<!@)[A-Za-z0-9._\-]+\.[A-Za-z]{2,}(?:/[A-Za-z0-9._/%?&=-]+)?
-        """,
-        options = setOf(RegexOption.COMMENTS)
-    )
-    fun filepathRegex(): Regex = Regex(
-        """(?x)
-        (?:
-          (?:[A-Za-z]:)?                      # Optional drive letter on Windows
-          (?:[\\/][A-Za-z0-9._\-\s]+)+        # One or more path segments
+    private companion object {
+        val KEEP_REGEX = Regex("((nav|test)[0-9]{6})")
+        val FNR_LOCAL_REGEX = Regex("\\b\\d{6}\\d{5}\\b")
+        val PRESERVE_URL_REGEX = Regex("https?://[A-Za-z0-9._\\-]+(?:\\.[A-Za-z0-9._\\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._\\-/%?&=]*)?")
+        val FNR_REGEX = Regex("(?<!\\d)\\d{11}(?!\\d)")
+        val NAVIDENT_REGEX = Regex("(?<![a-zA-Z0-9])[a-zA-Z]\\d{6}(?!\\d)")
+        val EMAIL_REGEX = Regex("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
+        val IP_REGEX = Regex("(?<!\\d)\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?!\\d)")
+        val PHONE_REGEX = Regex("(?<!\\d)[2-9]\\d{7}(?!\\d)")
+        val NAME_REGEX = Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}\\s[A-ZÆØÅ][a-zæøå]{1,20}(?:\\s[A-ZÆØÅ][a-zæøå]{1,20})?\\b")
+        val ADDRESS_REGEX = Regex("\\b\\d{4}\\s[A-ZÆØÅ][A-ZÆØÅa-zæøå]+(?:\\s[A-ZÆØÅa-zæøå]+)*\\b")
+        val SECRET_ADDRESS_REGEX = Regex("(?i)hemmelig(?:%20|\\s+)(?:20\\s*%(?:%20|\\s+))?adresse")
+        val ACCOUNT_REGEX = Regex("(?<!\\d)\\d{4}\\.?\\d{2}\\.?\\d{5}(?!\\d)")
+        val ORG_NUMBER_REGEX = Regex("(?<!\\d)\\d{9}(?!\\d)")
+        val LICENSE_PLATE_REGEX = Regex("(?<![a-zA-Z])[A-Z]{2}\\s?\\d{5}(?!\\d)")
+        val SEARCH_REGEX = Regex("[?&](?:q|query|search|k|ord)=[^&]+")
+        val UUID_PRESERVE_REGEX =
+            Regex("(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b")
+        val URL_PRESERVE_REGEX = Regex(
+            pattern = """(?x)
+                https?://[A-Za-z0-9._\-]+(?:\.[A-Za-z0-9._\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._/%?&=-]*)?
+                |
+                (?<!@)[A-Za-z0-9._\-]+\.[A-Za-z]{2,}(?:/[A-Za-z0-9._/%?&=-]+)?
+            """.trimIndent(),
+            options = setOf(RegexOption.COMMENTS)
         )
-        """.trimIndent()
-    )
+        val FILEPATH_REGEX = Regex(
+            """(?x)
+                (?:
+                  (?:[A-Za-z]:)?
+                  (?:[\\/][A-Za-z0-9._\-\s]+)+
+                )
+            """.trimIndent()
+        )
+    }
 }

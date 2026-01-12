@@ -10,6 +10,7 @@ spring:
       group-id: reops-umami-consumer-group
   main:
     banner-mode: off
+    web-application-type: reactive
   threads:
     virtual:
       enabled: true
