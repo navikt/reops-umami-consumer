@@ -18,3 +18,8 @@ spring:
 reops:
   umami:
     url: ${REOPS_UMAMI_URL}
+
+logging:
+  structured:
+    format:
+      console: logstash

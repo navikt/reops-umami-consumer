@@ -63,12 +63,6 @@ class FilterService(
             preserve = false
         ),
         RedactionRule(
-            name = "preserve_url",
-            regex = PRESERVE_URL_REGEX,
-            counter = Counter.builder("redactions_total").tag("rule", "preserve_url").register(meterRegistry),
-            preserve = true
-        ),
-        RedactionRule(
             name = "filepath",
             regex = FILEPATH_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "filepath").register(meterRegistry),
@@ -163,7 +157,6 @@ class FilterService(
     private companion object {
         val KEEP_REGEX = Regex("((nav|test)[0-9]{6})")
         val FNR_LOCAL_REGEX = Regex("\\b\\d{6}\\d{5}\\b")
-        val PRESERVE_URL_REGEX = Regex("https?://[A-Za-z0-9._\\-]+(?:\\.[A-Za-z0-9._\\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._\\-/%?&=]*)?")
         val FNR_REGEX = Regex("(?<!\\d)\\d{11}(?!\\d)")
         val NAVIDENT_REGEX = Regex("(?<![a-zA-Z0-9])[a-zA-Z]\\d{6}(?!\\d)")
         val EMAIL_REGEX = Regex("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
