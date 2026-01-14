@@ -11,6 +11,7 @@ data class Event(
         val language: String,
         val title: String,
         val url: String,
-        val referrer: String
+        val referrer: String,
+        val data: Map<String, Any?>? = null,
     )
 }
