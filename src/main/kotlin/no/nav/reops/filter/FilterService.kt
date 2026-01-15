@@ -25,10 +25,32 @@ class FilterService(
             language = redact(payload.language),
             title = redact(payload.title),
             url = redact(payload.url),
-            referrer = redact(payload.referrer)
+            referrer = redact(payload.referrer),
+            data = payload.data?.let { redactAny(it) as? Map<String, Any?> ?: it }
         )
         return event.copy(payload = sanitizedPayload)
     }
+
+    private fun redactAny(value: Any?): Any? =
+        when (value) {
+            null -> null
+            is String -> redact(value)
+
+            is Number -> {
+                val asText = value.toString()
+                val redacted = redact(asText)
+                if (redacted == asText) value else redacted
+            }
+
+            is Map<*, *> -> value.entries
+                .associate { (k, v) -> k.toString() to redactAny(v) }
+
+            is List<*> -> value.map { redactAny(it) }
+            is Set<*> -> value.map { redactAny(it) }.toSet()
+            is Array<*> -> value.map { redactAny(it) }.toTypedArray()
+            else -> value
+        }
+
 
     private fun redact(value: String): String {
         var current = value
