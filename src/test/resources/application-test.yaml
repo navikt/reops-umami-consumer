@@ -13,3 +13,7 @@ spring:
 reops:
   umami:
     url: http://localhost:${wiremock.server.port}
+
+logging:
+  level:
+    org.apache.kafka.common.errors.KafkaStorageException: ERROR

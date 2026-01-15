@@ -37,7 +37,7 @@ class KafkaService(
         event: Event,
         @Header(KafkaHeaders.RECEIVED_KEY) key: String,
         @Header(name = "User-Agent", required = true) userAgent: String,
-        @Header(name = "X-Exclude-Filters", required = true) excludeFilters: String,
+        @Header(name = "X-Exclude-Filters", required = false) excludeFilters: String,
         record: ConsumerRecord<String, Event>
     ) {
         LOG.info("Received event with key: $key at offset: ${record.offset()} in partition: ${record.partition()}")

@@ -48,13 +48,13 @@ class EndeTilEndeTest {
 		val event = Event(
 			type = "visit",
 			payload = Event.Payload(
-				website = "https://reops.no/search?q=secret",
+				website = "https://kake.no/",
 				hostname = "localhost",
 				screen = "12345678901",
 				language = "nb",
-				title = "john.doe@example.com",
-				url = "https://app.nav.no/12345678901",
-				referrer = "https://example.com/"
+				title = "john.doe@kake.no",
+				url = "https://kake.no/12345678901",
+				referrer = "https://kake.no/"
 			)
 		)
 
@@ -62,6 +62,7 @@ class EndeTilEndeTest {
 			.setHeader(KafkaHeaders.TOPIC, "test-topic")
 			.setHeader(KafkaHeaders.KEY, "event-key")
 			.setHeader("User-Agent", "test-agent")
+			.setHeader("X-Exclude-Filters", "")
 			.build()
 
 		kafkaTemplate.send(message)
