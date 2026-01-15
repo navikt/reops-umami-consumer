@@ -47,10 +47,10 @@ class FilterServiceRedactionRulesTest {
         val service = filterService()
 
         val out1 = service.filterEvent(TestEventFactory.eventWithData("nav123456"))
-        assertEquals("nav123456", (out1.payload.data!!["text"] as String))
+        assertEquals("nav123456", out1.payload.data!!.get("text").asString())
 
         val out2 = service.filterEvent(TestEventFactory.eventWithData("test654321"))
-        assertEquals("test654321", (out2.payload.data!!["text"] as String))
+        assertEquals("test654321", out2.payload.data!!.get("text").asString())
     }
 
     @Test
@@ -58,7 +58,7 @@ class FilterServiceRedactionRulesTest {
         val service = filterService()
 
         val out = service.filterEvent(TestEventFactory.eventWithData("23031510135"))
-        assertEquals("[PROXY-FNR]", (out.payload.data!!["text"] as String))
+        assertEquals("[PROXY-FNR]", out.payload.data!!.get("text").asString())
     }
 
     @Test
@@ -66,13 +66,13 @@ class FilterServiceRedactionRulesTest {
         val service = filterService()
 
         val out1 = service.filterEvent(TestEventFactory.eventWithData("my_fnr_23031510135"))
-        assertEquals("my_fnr_[PROXY-FNR]", (out1.payload.data!!["text"] as String))
+        assertEquals("my_fnr_[PROXY-FNR]", out1.payload.data!!.get("text").asString())
 
         val out2 = service.filterEvent(TestEventFactory.eventWithData("my-fnr:23031510135 it's nice"))
-        assertEquals("my-fnr:[PROXY-FNR] it's nice", (out2.payload.data!!["text"] as String))
+        assertEquals("my-fnr:[PROXY-FNR] it's nice", out2.payload.data!!.get("text").asString())
 
         val out3 = service.filterEvent(TestEventFactory.eventWithData("my-fnr-23031510135"))
-        assertEquals("my-fnr-[PROXY-FNR]", (out3.payload.data!!["text"] as String))
+        assertEquals("my-fnr-[PROXY-FNR]", out3.payload.data!!.get("text").asString())
     }
 
     @Test
@@ -80,13 +80,13 @@ class FilterServiceRedactionRulesTest {
         val service = filterService()
 
         val out1 = service.filterEvent(TestEventFactory.eventWithData("regularstring"))
-        assertEquals("regularstring", (out1.payload.data!!["text"] as String))
+        assertEquals("regularstring", out1.payload.data!!.get("text").asString())
 
         val out2 = service.filterEvent(TestEventFactory.eventWithData("anotherString"))
-        assertEquals("anotherString", (out2.payload.data!!["text"] as String))
+        assertEquals("anotherString", out2.payload.data!!.get("text").asString())
 
         val out3 = service.filterEvent(TestEventFactory.eventWithData("12345"))
-        assertEquals("12345", (out3.payload.data!!["text"] as String))
+        assertEquals("12345", out3.payload.data!!.get("text").asString())
     }
 
     @Test
@@ -97,17 +97,19 @@ class FilterServiceRedactionRulesTest {
         val event = base.copy(
             type = "event",
             payload = base.payload.copy(
-                data = mapOf(
-                    "user_email" to "user@example.com",
-                    "user_id" to "550e8400-e29b-41d4-a716-446655440000",
-                    "ssn" to "12345678901",
-                    "phone" to "98765432",
-                    "ip_address" to "192.168.1.1",
-                    "event_properties" to mapOf(
-                        "card_number" to "1234 5678 9012 3456",
-                        "account" to "1234.56.78901",
-                        "navident" to "X123456",
-                        "regular_field" to "This is normal text"
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "user_email" to "user@example.com",
+                        "user_id" to "550e8400-e29b-41d4-a716-446655440000",
+                        "ssn" to "12345678901",
+                        "phone" to "98765432",
+                        "ip_address" to "192.168.1.1",
+                        "event_properties" to mapOf(
+                            "card_number" to "1234 5678 9012 3456",
+                            "account" to "1234.56.78901",
+                            "navident" to "X123456",
+                            "regular_field" to "This is normal text"
+                        )
                     )
                 )
             )
@@ -117,16 +119,18 @@ class FilterServiceRedactionRulesTest {
 
         val expected = event.copy(
             payload = event.payload.copy(
-                data = mapOf(
-                    "user_email" to "[PROXY-EMAIL]",
-                    "user_id" to "550e8400-e29b-41d4-a716-446655440000",
-                    "ssn" to "[PROXY-FNR]",
-                    "phone" to "[PROXY-PHONE]",
-                    "event_properties" to mapOf(
-                        "card_number" to "1234 5678 9012 3456",
-                        "account" to "[PROXY-ACCOUNT]",
-                        "navident" to "[PROXY-NAVIDENT]",
-                        "regular_field" to "This is normal text"
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "user_email" to "[PROXY-EMAIL]",
+                        "user_id" to "550e8400-e29b-41d4-a716-446655440000",
+                        "ssn" to "[PROXY-FNR]",
+                        "phone" to "[PROXY-PHONE]",
+                        "event_properties" to mapOf(
+                            "card_number" to "1234 5678 9012 3456",
+                            "account" to "[PROXY-ACCOUNT]",
+                            "navident" to "[PROXY-NAVIDENT]",
+                            "regular_field" to "This is normal text"
+                        )
                     )
                 )
             )

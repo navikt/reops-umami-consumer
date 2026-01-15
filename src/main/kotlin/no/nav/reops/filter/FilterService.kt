@@ -69,11 +69,7 @@ class FilterService(
             referrer = if ("referrer" in excludeFilters) p.referrer else urlPolicy.redactUrl(p.referrer, redactor),
 
             // If someone excludes "data", keep it unchanged.
-            data = if ("data" in excludeFilters) {
-                p.data
-            } else {
-                p.data?.let { traverser.transform(it) as? Map<String, Any?> ?: it }
-            }
+            data = if ("data" in excludeFilters) p.data else p.data?.let { traverser.transform(it) }
         )
 
         return event.copy(payload = sanitized)

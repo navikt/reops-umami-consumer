@@ -27,9 +27,11 @@ class FilterServiceUrlPolicyTest {
         val event = base.copy(
             type = "event",
             payload = base.payload.copy(
-                data = mapOf(
-                    "payload" to mapOf(
-                        "url" to "/path/to/thing?file=/my/secret/file.txt"
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "payload" to mapOf(
+                            "url" to "/path/to/thing?file=/my/secret/file.txt"
+                        )
                     )
                 )
             )
@@ -37,9 +39,8 @@ class FilterServiceUrlPolicyTest {
 
         val out = service.filterEvent(event)
 
-        val outPayload = out.payload.data as Map<*, *>
-        val inner = outPayload["payload"] as Map<*, *>
-        assertEquals("/path/to/thing?file=[PROXY-FILEPATH]", inner["url"])
+        val inner = out.payload.data!!.get("payload")
+        assertEquals("/path/to/thing?file=[PROXY-FILEPATH]", inner.get("url").asString())
     }
 
     @Test
@@ -52,12 +53,14 @@ class FilterServiceUrlPolicyTest {
             payload = base.payload.copy(
                 url = "/home/user/documents/file.txt",
                 referrer = "/var/www/html/site",
-                data = mapOf(
-                    "data" to mapOf(
-                        "page_path" to "/users/john/profile",
-                        "file_path" to "C:\\Users\\Admin\\data",
-                        "filepath" to "/home/user/doc.pdf",
-                        "description" to "/etc/passwd"
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "data" to mapOf(
+                            "page_path" to "/users/john/profile",
+                            "file_path" to "C:\\Users\\Admin\\data",
+                            "filepath" to "/home/user/doc.pdf",
+                            "description" to "/etc/passwd"
+                        )
                     )
                 )
             )
@@ -68,12 +71,11 @@ class FilterServiceUrlPolicyTest {
         assertEquals("/home/user/documents/file.txt", out.payload.url)
         assertEquals("/var/www/html/site", out.payload.referrer)
 
-        val outData = out.payload.data as Map<*, *>
-        val inner = outData["data"] as Map<*, *>
-        assertEquals("[PROXY-FILEPATH]", inner["page_path"])
-        assertEquals("[PROXY-FILEPATH]", inner["file_path"])
-        assertEquals("[PROXY-FILEPATH]", inner["filepath"])
-        assertEquals("[PROXY-FILEPATH]", inner["description"])
+        val inner = out.payload.data!!.get("data")
+        assertEquals("[PROXY-FILEPATH]", inner.get("page_path").asString())
+        assertEquals("[PROXY-FILEPATH]", inner.get("file_path").asString())
+        assertEquals("[PROXY-FILEPATH]", inner.get("filepath").asString())
+        assertEquals("[PROXY-FILEPATH]", inner.get("description").asString())
     }
 
     @Test
@@ -85,11 +87,13 @@ class FilterServiceUrlPolicyTest {
             type = "event",
             payload = base.payload.copy(
                 url = "/home/user/documents/file.txt",
-                data = mapOf(
-                    "data" to mapOf(
-                        "url" to "/var/www/html/index.php",
-                        "config" to mapOf(
-                            "url" to "C:\\Users\\Admin\\file.exe"
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "data" to mapOf(
+                            "url" to "/var/www/html/index.php",
+                            "config" to mapOf(
+                                "url" to "C:\\Users\\Admin\\file.exe"
+                            )
                         )
                     )
                 )
@@ -100,11 +104,11 @@ class FilterServiceUrlPolicyTest {
 
         assertEquals("/home/user/documents/file.txt", out.payload.url)
 
-        val outData = out.payload.data as Map<*, *>
-        val inner = outData["data"] as Map<*, *>
-        assertEquals("[PROXY-FILEPATH]", inner["url"])
-        val cfg = inner["config"] as Map<*, *>
-        assertEquals("[PROXY-FILEPATH]", cfg["url"])
+        val inner = out.payload.data!!.get("data")
+        assertEquals("[PROXY-FILEPATH]", inner.get("url").asString())
+
+        val cfg = inner.get("config")
+        assertEquals("[PROXY-FILEPATH]", cfg.get("url").asString())
     }
 
     @Test

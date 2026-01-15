@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.wiremock.spring.ConfigureWireMock
 import org.wiremock.spring.EnableWireMock
 import org.wiremock.spring.InjectWireMock
+import tools.jackson.databind.node.JsonNodeFactory
 import java.time.Duration
 
 @SpringBootTest
@@ -39,13 +40,16 @@ class EndeTilEndeTest {
     fun `skal kunne konsumere hendelse på kafka`() {
         umamiMock.stubFor(
             post(urlEqualTo("/api/send")).willReturn(
-                    aResponse().withStatus(200)
-                        .withBody("{\"cache\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3ZWJzaXRlSWQiOiIxZGJmZTRlOS1iZjhiLTQ1ZDktOTMwNS05MjhmMjIyMDBiYzAiLCJzZXNzaW9uSWQiOiIxYTU1MWEyYS1hYWU2LTU2M2QtOWFmNy1hM2JmZmFhYjFhNTMiLCJ2aXNpdElkIjoiODIyOWI4ZDYtNWUzMS01YjA1LTgzZmMtNDVjZGMwYTFkMDFkIiwiaWF0IjoxNzY4NDY5NzIwfQ.BY5xdifMYzJdhEuNP_0euSeiYSlob7cdu4qsZ548G1M\",\"sessionId\":\"1a551a2a-aae6-563d-9af7-a3bffaab1a53\",\"visitId\":\"8229b8d6-5e31-5b05-83fc-45cdc0a1d01d\"}")
-                )
+                aResponse().withStatus(200)
+                    .withBody(
+                        "{\"cache\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3ZWJzaXRlSWQiOiIxZGJmZTRlOS1iZjhiLTQ1ZDktOTMwNS05MjhmMjIyMDBiYzAiLCJzZXNzaW9uSWQiOiIxYTU1MWEyYS1hYWU2LTU2M2QtOWFmNy1hM2JmZmFhYjFhNTMiLCJ2aXNpdElkIjoiODIyOWI4ZDYtNWUzMS01YjA1LTgzZmMtNDVjZGMwYTFkMDFkIiwiaWF0IjoxNzY4NDY5NzIwfQ.BY5xdifMYzJdhEuNP_0euSeiYSlob7cdu4qsZ548G1M\",\"sessionId\":\"1a551a2a-aae6-563d-9af7-a3bffaab1a53\",\"visitId\":\"8229b8d6-5e31-5b05-83fc-45cdc0a1d01d\"}"
+                    )
+            )
         )
 
         val event = Event(
-            type = "visit", payload = Event.Payload(
+            type = "visit",
+            payload = Event.Payload(
                 website = "https://kake.no/",
                 hostname = "localhost",
                 screen = "12345678910",
@@ -56,9 +60,12 @@ class EndeTilEndeTest {
             )
         )
 
-        val message = MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "test-topic")
-            .setHeader(KafkaHeaders.KEY, "event-key").setHeader("User-Agent", "test-agent")
-            .setHeader("X-Exclude-Filters", "").build()
+        val message = MessageBuilder.withPayload(event)
+            .setHeader(KafkaHeaders.TOPIC, "test-topic")
+            .setHeader(KafkaHeaders.KEY, "event-key")
+            .setHeader("User-Agent", "test-agent")
+            .setHeader("X-Exclude-Filters", "")
+            .build()
 
         kafkaTemplate.send(message)
 
@@ -72,36 +79,46 @@ class EndeTilEndeTest {
                     .withRequestBody(containing("https://kake.no/"))
             )
         }
-
     }
 
-	@Test
-	fun `skal kunne konsumere hendelse på kafka med data`() {
-		umamiMock.stubFor(
-			post(urlEqualTo("/api/send")).willReturn(
-				aResponse().withStatus(200)
-					.withBody("{\"cache\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3ZWJzaXRlSWQiOiIxZGJmZTRlOS1iZjhiLTQ1ZDktOTMwNS05MjhmMjIyMDBiYzAiLCJzZXNzaW9uSWQiOiIxYTU1MWEyYS1hYWU2LTU2M2QtOWFmNy1hM2JmZmFhYjFhNTMiLCJ2aXNpdElkIjoiODIyOWI4ZDYtNWUzMS01YjA1LTgzZmMtNDVjZGMwYTFkMDFkIiwiaWF0IjoxNzY4NDY5NzIwfQ.BY5xdifMYzJdhEuNP_0euSeiYSlob7cdu4qsZ548G1M\",\"sessionId\":\"1a551a2a-aae6-563d-9af7-a3bffaab1a53\",\"visitId\":\"8229b8d6-5e31-5b05-83fc-45cdc0a1d01d\"}")
-			)
-		)
+    @Test
+    fun `skal kunne konsumere hendelse på kafka med data`() {
+        umamiMock.stubFor(
+            post(urlEqualTo("/api/send")).willReturn(
+                aResponse().withStatus(200)
+                    .withBody(
+                        "{\"cache\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3ZWJzaXRlSWQiOiIxZGJmZTRlOS1iZjhiLTQ1ZDktOTMwNS05MjhmMjIyMDBiYzAiLCJzZXNzaW9uSWQiOiIxYTU1MWEyYS1hYWU2LTU2M2QtOWFmNy1hM2JmZmFhYjFhNTMiLCJ2aXNpdElkIjoiODIyOWI4ZDYtNWUzMS01YjA1LTgzZmMtNDVjZGMwYTFkMDFkIiwiaWF0IjoxNzY4NDY5NzIwfQ.BY5xdifMYzJdhEuNP_0euSeiYSlob7cdu4qsZ548G1M\",\"sessionId\":\"1a551a2a-aae6-563d-9af7-a3bffaab1a53\",\"visitId\":\"8229b8d6-5e31-5b05-83fc-45cdc0a1d01d\"}"
+                    )
+            )
+        )
 
-		val event = Event(
-			type = "visit", payload = Event.Payload(
-				website = "https://kake.no/",
-				hostname = "localhost",
-				screen = "12345678910",
-				language = "nb",
-				title = "john.doe@kake.no",
-				url = "https://kake.no/12345678910",
-				referrer = "https://kake.no/",
-				data = mapOf("hest" to "er best", "antall" to 42, "liker-hest" to true)
-			)
-		)
+        val dataNode = JsonNodeFactory.instance.objectNode()
+            .put("hest", "er best")
+            .put("antall", 42)
+            .put("liker-hest", true)
 
-		val message = MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "test-topic")
-			.setHeader(KafkaHeaders.KEY, "event-key").setHeader("User-Agent", "test-agent")
-			.setHeader("X-Exclude-Filters", "").build()
+        val event = Event(
+            type = "visit",
+            payload = Event.Payload(
+                website = "https://kake.no/",
+                hostname = "localhost",
+                screen = "12345678910",
+                language = "nb",
+                title = "john.doe@kake.no",
+                url = "https://kake.no/12345678910",
+                referrer = "https://kake.no/",
+                data = dataNode
+            )
+        )
 
-		kafkaTemplate.send(message)
+        val message = MessageBuilder.withPayload(event)
+            .setHeader(KafkaHeaders.TOPIC, "test-topic")
+            .setHeader(KafkaHeaders.KEY, "event-key")
+            .setHeader("User-Agent", "test-agent")
+            .setHeader("X-Exclude-Filters", "")
+            .build()
+
+        kafkaTemplate.send(message)
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted {
             umamiMock.verify(
@@ -111,8 +128,11 @@ class EndeTilEndeTest {
                     .withRequestBody(containing("john.doe@kake.no"))
                     .withRequestBody(containing("https://kake.no/12345678910"))
                     .withRequestBody(containing("https://kake.no/"))
+                    // optional: verify data keys are present
+                    .withRequestBody(containing("\"hest\""))
+                    .withRequestBody(containing("\"antall\""))
+                    .withRequestBody(containing("\"liker-hest\""))
             )
         }
-
-	}
+    }
 }
