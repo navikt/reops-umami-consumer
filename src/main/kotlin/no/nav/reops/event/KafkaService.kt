@@ -5,7 +5,6 @@ import io.micrometer.core.instrument.MeterRegistry
 import no.nav.reops.filter.FilterService
 import no.nav.reops.umami.UmamiService
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.KafkaHeaders
@@ -14,19 +13,13 @@ import org.springframework.stereotype.Service
 
 @Service
 class KafkaService(
-    private val filterService: FilterService,
-    private val umamiService: UmamiService,
-    meterRegistry: MeterRegistry
+    private val filterService: FilterService, private val umamiService: UmamiService, meterRegistry: MeterRegistry
 ) {
     private val kafkaEventsSuccess: Counter =
-        Counter.builder("kafka_events_processed_total")
-            .tag("result", "success")
-            .register(meterRegistry)
+        Counter.builder("kafka_events_processed_total").tag("result", "success").register(meterRegistry)
 
     private val kafkaEventsFailure: Counter =
-        Counter.builder("kafka_events_processed_total")
-            .tag("result", "failure")
-            .register(meterRegistry)
+        Counter.builder("kafka_events_processed_total").tag("result", "failure").register(meterRegistry)
 
     @KafkaListener(
         topics = ["\${spring.kafka.topic}"],
@@ -41,11 +34,15 @@ class KafkaService(
         record: ConsumerRecord<String, Event>
     ) {
         LOG.info("Received event with key: $key at offset: ${record.offset()} in partition: ${record.partition()}")
-        val shouldExcludeFilters = excludeFilters?.split(",")?.map { it.trim() }
-        LOG.info("Exclude filters for this event: $shouldExcludeFilters")
+
+        val excludeKeys: Set<String> =
+            excludeFilters?.split(",")?.asSequence()?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+                ?: emptySet()
+
+        LOG.info("Exclude filters for this event: $excludeKeys")
 
         try {
-            val filteredEvent = filterService.filterEvent(event)
+            val filteredEvent = filterService.filterEvent(event, excludeKeys)
             umamiService.sendEvent(filteredEvent, userAgent)
             kafkaEventsSuccess.increment()
         } catch (ex: Exception) {

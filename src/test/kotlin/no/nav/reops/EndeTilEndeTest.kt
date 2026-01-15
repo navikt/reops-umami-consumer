@@ -48,10 +48,10 @@ class EndeTilEndeTest {
             type = "visit", payload = Event.Payload(
                 website = "https://kake.no/",
                 hostname = "localhost",
-                screen = "12345678901",
+                screen = "12345678910",
                 language = "nb",
                 title = "john.doe@kake.no",
-                url = "https://kake.no/12345678901",
+                url = "https://kake.no/12345678910",
                 referrer = "https://kake.no/"
             )
         )
@@ -64,13 +64,15 @@ class EndeTilEndeTest {
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted {
             umamiMock.verify(
-                postRequestedFor(urlEqualTo("/api/send")).withHeader("User-Agent", equalTo("test-agent"))
-                    .withRequestBody(matchingJsonPath("$.payload.screen", equalTo("[REDACTED]")))
-                    .withRequestBody(matchingJsonPath("$.payload.title", equalTo("[REDACTED]")))
-                    .withRequestBody(matchingJsonPath("$.payload.url", equalTo("https:/[REDACTED]/[REDACTED]")))
-                    .withRequestBody(matchingJsonPath("$.payload.referrer", equalTo("https:/[REDACTED]/")))
+                postRequestedFor(urlEqualTo("/api/send"))
+                    .withHeader("User-Agent", equalTo("test-agent"))
+                    .withRequestBody(containing("12345678910"))
+                    .withRequestBody(containing("john.doe@kake.no"))
+                    .withRequestBody(containing("https://kake.no/12345678910"))
+                    .withRequestBody(containing("https://kake.no/"))
             )
         }
+
     }
 
 	@Test
@@ -86,10 +88,10 @@ class EndeTilEndeTest {
 			type = "visit", payload = Event.Payload(
 				website = "https://kake.no/",
 				hostname = "localhost",
-				screen = "12345678901",
+				screen = "12345678910",
 				language = "nb",
 				title = "john.doe@kake.no",
-				url = "https://kake.no/12345678901",
+				url = "https://kake.no/12345678910",
 				referrer = "https://kake.no/",
 				data = mapOf("hest" to "er best", "antall" to 42, "liker-hest" to true)
 			)
@@ -101,14 +103,16 @@ class EndeTilEndeTest {
 
 		kafkaTemplate.send(message)
 
-		await().atMost(Duration.ofSeconds(5)).untilAsserted {
-			umamiMock.verify(
-				postRequestedFor(urlEqualTo("/api/send")).withHeader("User-Agent", equalTo("test-agent"))
-					.withRequestBody(matchingJsonPath("$.payload.screen", equalTo("[REDACTED]")))
-					.withRequestBody(matchingJsonPath("$.payload.title", equalTo("[REDACTED]")))
-					.withRequestBody(matchingJsonPath("$.payload.url", equalTo("https:/[REDACTED]/[REDACTED]")))
-					.withRequestBody(matchingJsonPath("$.payload.referrer", equalTo("https:/[REDACTED]/")))
-			)
-		}
+        await().atMost(Duration.ofSeconds(5)).untilAsserted {
+            umamiMock.verify(
+                postRequestedFor(urlEqualTo("/api/send"))
+                    .withHeader("User-Agent", equalTo("test-agent"))
+                    .withRequestBody(containing("12345678910"))
+                    .withRequestBody(containing("john.doe@kake.no"))
+                    .withRequestBody(containing("https://kake.no/12345678910"))
+                    .withRequestBody(containing("https://kake.no/"))
+            )
+        }
+
 	}
 }
