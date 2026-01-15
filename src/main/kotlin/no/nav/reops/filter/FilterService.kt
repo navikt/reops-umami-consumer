@@ -6,25 +6,13 @@ import no.nav.reops.event.Event
 import org.springframework.stereotype.Service
 
 data class RedactionRule(
-    val name: String,
-    val regex: Regex,
-    val counter: Counter,
-    val preserve: Boolean
+    val name: String, val regex: Regex, val counter: Counter, val preserve: Boolean
 )
 
 @Service
 class FilterService(
-    private val meterRegistry: MeterRegistry
+    meterRegistry: MeterRegistry
 ) {
-    private val redactionTriggeredInData: Counter =
-        Counter.builder("redactions_payload_data_total").register(meterRegistry)
-
-    private fun dataRuleCounter(ruleName: String, path: String): Counter =
-        Counter.builder("redactions_payload_data_total")
-            .tag("rule", ruleName)
-            .tag("path", path)
-            .register(meterRegistry)
-
     fun filterEvent(event: Event): Event {
         val payload = event.payload
         val sanitizedPayload = payload.copy(
@@ -35,60 +23,52 @@ class FilterService(
             title = redact(payload.title),
             url = redact(payload.url),
             referrer = redact(payload.referrer),
-            data = payload.data?.let { redactAny(it, "payload.data") as? Map<String, Any?> ?: it }
-        )
+            data = payload.data?.let { redactAny(it) as? Map<String, Any?> ?: it })
         return event.copy(payload = sanitizedPayload)
     }
 
-    private fun redactAny(value: Any?, path: String): Any? =
-        when (value) {
-            null -> null
+    private fun redactAny(value: Any?): Any? = when (value) {
+        null -> null
 
-            is String -> redact(value, path)
-            is Number -> {
-                val asText = value.toString()
-                val redacted = redact(asText, path)
-                if (redacted == asText) value else redacted
-            }
-            is Boolean -> {
-                val asText = value.toString()
-                val redacted = redact(asText, path)
-                if (redacted == asText) value else redacted
-            }
-
-            is Map<*, *> -> value.entries
-                .associate { (k, v) ->
-                    val key = k?.toString() ?: "null"
-                    key to redactAny(v, "$path.$key")
-                }
-
-            is List<*> -> value.mapIndexed { index, item ->
-                redactAny(item, "$path[$index]")
-            }
-
-            is Set<*> -> value.mapIndexed { index, item ->
-                redactAny(item, "$path[$index]")
-            }.toSet()
-
-            is Array<*> -> value.mapIndexed { index, item ->
-                redactAny(item, "$path[$index]")
-            }.toTypedArray()
-
-            else -> value
+        is String -> redact(value)
+        is Number -> {
+            val asText = value.toString()
+            val redacted = redact(asText)
+            if (redacted == asText) value else redacted
         }
 
-    private fun redact(value: String, path: String? = null): String {
+        is Boolean -> {
+            val asText = value.toString()
+            val redacted = redact(asText)
+            if (redacted == asText) value else redacted
+        }
+
+        is Map<*, *> -> value.entries.associate { (k, v) ->
+                val key = k?.toString() ?: "null"
+                key to redactAny(v)
+            }
+
+        is List<*> -> value.map { item ->
+            redactAny(item)
+        }
+
+        is Set<*> -> value.map { item ->
+            redactAny(item)
+        }.toSet()
+
+        is Array<*> -> value.map { item ->
+            redactAny(item)
+        }.toTypedArray()
+
+        else -> value
+    }
+
+    private fun redact(value: String): String {
         var current = value
-        var anyRuleTriggeredInData = false
 
         for (rule in redactionRules) {
             val found = rule.regex.containsMatchIn(current)
             if (!found) continue
-
-            if (path != null) {
-                anyRuleTriggeredInData = true
-                dataRuleCounter(rule.name, path).increment()
-            }
 
             if (!rule.preserve) {
                 val replaced = rule.regex.replace(current, "[REDACTED]")
@@ -100,11 +80,6 @@ class FilterService(
                 rule.counter.increment()
             }
         }
-
-        if (path != null && anyRuleTriggeredInData) {
-            redactionTriggeredInData.increment()
-        }
-
         return current
     }
 
@@ -114,98 +89,82 @@ class FilterService(
             regex = KEEP_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "keep").register(meterRegistry),
             preserve = true
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "fnr_local",
             regex = FNR_LOCAL_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "fnr_local").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "filepath",
             regex = FILEPATH_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "filepath").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "fnr",
             regex = FNR_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "fnr").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "navident",
             regex = NAVIDENT_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "navident").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "email",
             regex = EMAIL_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "email").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "ip",
             regex = IP_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "ip").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "phone",
             regex = PHONE_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "phone").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "name",
             regex = NAME_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "name").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "address",
             regex = ADDRESS_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "address").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "secret_address",
             regex = SECRET_ADDRESS_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "secret_address").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "account",
             regex = ACCOUNT_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "account").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "org_number",
             regex = ORG_NUMBER_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "org_number").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "license_plate",
             regex = LICENSE_PLATE_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "license_plate").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "search",
             regex = SEARCH_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "search").register(meterRegistry),
             preserve = false
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "uuid_preserve",
             regex = UUID_PRESERVE_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "uuid_preserve").register(meterRegistry),
             preserve = true
-        ),
-        RedactionRule(
+        ), RedactionRule(
             name = "url_preserve",
             regex = URL_PRESERVE_REGEX,
             counter = Counter.builder("redactions_total").tag("rule", "url_preserve").register(meterRegistry),
@@ -221,23 +180,20 @@ class FilterService(
         val EMAIL_REGEX = Regex("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
         val IP_REGEX = Regex("(?<!\\d)\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?!\\d)")
         val PHONE_REGEX = Regex("(?<!\\d)[2-9]\\d{7}(?!\\d)")
-        val NAME_REGEX =
-            Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}\\s[A-ZÆØÅ][a-zæøå]{1,20}(?:\\s[A-ZÆØÅ][a-zæøå]{1,20})?\\b")
+        val NAME_REGEX = Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}\\s[A-ZÆØÅ][a-zæøå]{1,20}(?:\\s[A-ZÆØÅ][a-zæøå]{1,20})?\\b")
         val ADDRESS_REGEX = Regex("\\b\\d{4}\\s[A-ZÆØÅ][A-ZÆØÅa-zæøå]+(?:\\s[A-ZÆØÅa-zæøå]+)*\\b")
         val SECRET_ADDRESS_REGEX = Regex("(?i)hemmelig(?:%20|\\s+)(?:20\\s*%(?:%20|\\s+))?adresse")
         val ACCOUNT_REGEX = Regex("(?<!\\d)\\d{4}\\.?\\d{2}\\.?\\d{5}(?!\\d)")
         val ORG_NUMBER_REGEX = Regex("(?<!\\d)\\d{9}(?!\\d)")
         val LICENSE_PLATE_REGEX = Regex("(?<![a-zA-Z])[A-Z]{2}\\s?\\d{5}(?!\\d)")
         val SEARCH_REGEX = Regex("[?&](?:q|query|search|k|ord)=[^&]+")
-        val UUID_PRESERVE_REGEX =
-            Regex("(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b")
+        val UUID_PRESERVE_REGEX = Regex("(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b")
         val URL_PRESERVE_REGEX = Regex(
             pattern = """(?x)
                 https?://[A-Za-z0-9._\-]+(?:\.[A-Za-z0-9._\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._/%?&=-]*)?
                 |
                 (?<!@)[A-Za-z0-9._\-]+\.[A-Za-z]{2,}(?:/[A-Za-z0-9._/%?&=-]+)?
-            """.trimIndent(),
-            options = setOf(RegexOption.COMMENTS)
+            """.trimIndent(), options = setOf(RegexOption.COMMENTS)
         )
         val FILEPATH_REGEX = Regex(
             """(?x)
