@@ -4,7 +4,6 @@ import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import no.nav.reops.event.Event
 import org.springframework.stereotype.Service
-import kotlin.toString
 
 data class RedactionRule(
     val name: String,
