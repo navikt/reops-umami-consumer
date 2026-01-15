@@ -16,4 +16,5 @@ reops:
 
 logging:
   level:
-    org.apache.kafka.common.errors.KafkaStorageException: ERROR
+    root: ERROR
+    no.nav.reops: INFO
