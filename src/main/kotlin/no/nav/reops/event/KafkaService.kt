@@ -18,8 +18,6 @@ class KafkaService(
     private val umamiService: UmamiService,
     meterRegistry: MeterRegistry
 ) {
-    private val logger: Logger = LoggerFactory.getLogger(KafkaService::class.java)
-
     private val kafkaEventsSuccess: Counter =
         Counter.builder("kafka_events_processed_total")
             .tag("result", "success")
@@ -39,9 +37,12 @@ class KafkaService(
         event: Event,
         @Header(KafkaHeaders.RECEIVED_KEY) key: String,
         @Header(name = "User-Agent", required = true) userAgent: String,
+        @Header(name = "X-Exclude-Filters", required = true) excludeFilters: String,
         record: ConsumerRecord<String, Event>
     ) {
-        logger.info("Received event with key: $key at offset: ${record.offset()} in partition: ${record.partition()}")
+        LOG.info("Received event with key: $key at offset: ${record.offset()} in partition: ${record.partition()}")
+        val shouldExcludeFilters = excludeFilters.split(",").map { it.trim() }
+        LOG.info("Exclude filters for this event: $shouldExcludeFilters")
 
         try {
             val filteredEvent = filterService.filterEvent(event)
@@ -49,8 +50,12 @@ class KafkaService(
             kafkaEventsSuccess.increment()
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()
-            logger.error("Failed processing kafka event key=$key offset=${record.offset()} partition=${record.partition()}", ex)
+            LOG.error("Failed processing kafka event key=$key offset=${record.offset()} partition=${record.partition()}", ex)
             throw ex
         }
+    }
+
+    private companion object {
+        private val LOG = LoggerFactory.getLogger(KafkaService::class.java)
     }
 }
