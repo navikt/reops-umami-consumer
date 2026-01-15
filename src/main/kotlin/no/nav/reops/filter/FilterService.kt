@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import no.nav.reops.event.Event
 import org.springframework.stereotype.Service
+import kotlin.toString
 
 data class RedactionRule(
     val name: String,
@@ -14,8 +15,17 @@ data class RedactionRule(
 
 @Service
 class FilterService(
-    meterRegistry: MeterRegistry
+    private val meterRegistry: MeterRegistry
 ) {
+    private val redactionTriggeredInData: Counter =
+        Counter.builder("redactions_payload_data_total").register(meterRegistry)
+
+    private fun dataRuleCounter(ruleName: String, path: String): Counter =
+        Counter.builder("redactions_payload_data_total")
+            .tag("rule", ruleName)
+            .tag("path", path)
+            .register(meterRegistry)
+
     fun filterEvent(event: Event): Event {
         val payload = event.payload
         val sanitizedPayload = payload.copy(
@@ -26,48 +36,76 @@ class FilterService(
             title = redact(payload.title),
             url = redact(payload.url),
             referrer = redact(payload.referrer),
-            data = payload.data?.let { redactAny(it) as? Map<String, Any?> ?: it }
+            data = payload.data?.let { redactAny(it, "payload.data") as? Map<String, Any?> ?: it }
         )
         return event.copy(payload = sanitizedPayload)
     }
 
-    private fun redactAny(value: Any?): Any? =
+    private fun redactAny(value: Any?, path: String): Any? =
         when (value) {
             null -> null
-            is String -> redact(value)
 
+            is String -> redact(value, path)
             is Number -> {
                 val asText = value.toString()
-                val redacted = redact(asText)
+                val redacted = redact(asText, path)
+                if (redacted == asText) value else redacted
+            }
+            is Boolean -> {
+                val asText = value.toString()
+                val redacted = redact(asText, path)
                 if (redacted == asText) value else redacted
             }
 
             is Map<*, *> -> value.entries
-                .associate { (k, v) -> k.toString() to redactAny(v) }
+                .associate { (k, v) ->
+                    val key = k?.toString() ?: "null"
+                    key to redactAny(v, "$path.$key")
+                }
 
-            is List<*> -> value.map { redactAny(it) }
-            is Set<*> -> value.map { redactAny(it) }.toSet()
-            is Array<*> -> value.map { redactAny(it) }.toTypedArray()
+            is List<*> -> value.mapIndexed { index, item ->
+                redactAny(item, "$path[$index]")
+            }
+
+            is Set<*> -> value.mapIndexed { index, item ->
+                redactAny(item, "$path[$index]")
+            }.toSet()
+
+            is Array<*> -> value.mapIndexed { index, item ->
+                redactAny(item, "$path[$index]")
+            }.toTypedArray()
+
             else -> value
         }
 
-
-    private fun redact(value: String): String {
+    private fun redact(value: String, path: String? = null): String {
         var current = value
+        var anyRuleTriggeredInData = false
+
         for (rule in redactionRules) {
             val found = rule.regex.containsMatchIn(current)
-            if (found) {
-                if (!rule.preserve) {
-                    val replaced = rule.regex.replace(current, "[REDACTED]")
-                    if (replaced !== current) {
-                        rule.counter.increment()
-                        current = replaced
-                    }
-                } else {
+            if (!found) continue
+
+            if (path != null) {
+                anyRuleTriggeredInData = true
+                dataRuleCounter(rule.name, path).increment()
+            }
+
+            if (!rule.preserve) {
+                val replaced = rule.regex.replace(current, "[REDACTED]")
+                if (replaced !== current) {
                     rule.counter.increment()
+                    current = replaced
                 }
+            } else {
+                rule.counter.increment()
             }
         }
+
+        if (path != null && anyRuleTriggeredInData) {
+            redactionTriggeredInData.increment()
+        }
+
         return current
     }
 
@@ -184,7 +222,8 @@ class FilterService(
         val EMAIL_REGEX = Regex("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
         val IP_REGEX = Regex("(?<!\\d)\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?!\\d)")
         val PHONE_REGEX = Regex("(?<!\\d)[2-9]\\d{7}(?!\\d)")
-        val NAME_REGEX = Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}\\s[A-ZÆØÅ][a-zæøå]{1,20}(?:\\s[A-ZÆØÅ][a-zæøå]{1,20})?\\b")
+        val NAME_REGEX =
+            Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}\\s[A-ZÆØÅ][a-zæøå]{1,20}(?:\\s[A-ZÆØÅ][a-zæøå]{1,20})?\\b")
         val ADDRESS_REGEX = Regex("\\b\\d{4}\\s[A-ZÆØÅ][A-ZÆØÅa-zæøå]+(?:\\s[A-ZÆØÅa-zæøå]+)*\\b")
         val SECRET_ADDRESS_REGEX = Regex("(?i)hemmelig(?:%20|\\s+)(?:20\\s*%(?:%20|\\s+))?adresse")
         val ACCOUNT_REGEX = Regex("(?<!\\d)\\d{4}\\.?\\d{2}\\.?\\d{5}(?!\\d)")
