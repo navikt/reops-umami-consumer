@@ -65,8 +65,8 @@ class FilterService(
             title = if ("title" in excludeFilters) p.title else p.title,
 
             // URL policy for top-level payload URLs, unless excluded
-            url = if ("url" in excludeFilters) p.url else urlPolicy.redactUrl(p.url, redactor),
-            referrer = if ("referrer" in excludeFilters) p.referrer else urlPolicy.redactUrl(p.referrer, redactor),
+            url = if ("url" in excludeFilters) p.url else p.url?.let { urlPolicy.redactUrl(it, redactor) },
+            referrer = if ("referrer" in excludeFilters) p.referrer else p.referrer?.let { urlPolicy.redactUrl(it, redactor) },
 
             // If someone excludes "data", keep it unchanged.
             data = if ("data" in excludeFilters) p.data else p.data?.let { traverser.transform(it) }
