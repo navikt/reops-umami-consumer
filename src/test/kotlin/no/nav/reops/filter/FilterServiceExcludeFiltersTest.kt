@@ -53,7 +53,7 @@ class FilterServiceExcludeFiltersTest {
         val out = service.filterEvent(event, excludeFilters = setOf("url"))
 
         assertEquals("/search?email=user@example.com&phone=98765432", out.payload.url)
-        assertTrue(out.payload.url.contains("user@example.com"))
-        assertTrue(out.payload.url.contains("98765432"))
+        assertTrue(out.payload.url!!.contains("user@example.com"))
+        assertTrue(out.payload.url!!.contains("98765432"))
     }
 }
