@@ -47,7 +47,10 @@ class KafkaService(
             kafkaEventsSuccess.increment()
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()
-            LOG.error("Failed processing kafka event key=$key offset=${record.offset()} partition=${record.partition()}", ex)
+            LOG.error(
+                "Failed processing kafka event key=$key offset=${record.offset()} partition=${record.partition()}",
+                ex
+            )
             throw ex
         }
     }

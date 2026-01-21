@@ -30,11 +30,8 @@ class FilterServiceExcludeFiltersTest {
         )
 
         val out = service.filterEvent(event, excludeFilters = setOf("user_email", "event_properties"))
-
-        // user_email preserved
         assertEquals("user@example.com", out.payload.data!!.get("user_email").asString())
 
-        // event_properties preserved as-is (no traversal/redaction inside)
         val props = out.payload.data.get("event_properties")
         assertEquals("deep@example.com", props.get("email").asString())
         assertEquals("12345678901", props.get("ssn").asString())

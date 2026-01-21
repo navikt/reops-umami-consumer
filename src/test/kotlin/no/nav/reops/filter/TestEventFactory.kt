@@ -12,7 +12,7 @@ internal object TestEventFactory {
         return when (value) {
             null -> f.nullNode()
             is JsonNode -> value
-            is String -> f.textNode(value)
+            is String -> f.stringNode(value)
             is Boolean -> f.booleanNode(value)
             is Int -> f.numberNode(value)
             is Long -> f.numberNode(value)
@@ -45,14 +45,13 @@ internal object TestEventFactory {
                 a
             }
 
-            else -> f.textNode(value.toString())
+            else -> f.stringNode(value.toString())
         }
     }
 
     fun minimalEvent(): Event {
         return Event(
-            type = "visit",
-            payload = Event.Payload(
+            type = "visit", payload = Event.Payload(
                 website = "https://kake.no/",
                 hostname = "localhost",
                 screen = "12345678901",

@@ -38,7 +38,13 @@ class KafkaServiceTest {
         whenever(filterService.filterEvent(eq(event), eq(setOf("a", "b", "c")))).thenReturn(filteredEvent)
 
         val record = consumerRecord(key = key, value = event)
-        kafkaService.eventListen(event = event, key = key, userAgent = userAgent, excludeFilters = excludeFilters, record = record)
+        kafkaService.eventListen(
+            event = event,
+            key = key,
+            userAgent = userAgent,
+            excludeFilters = excludeFilters,
+            record = record
+        )
 
         verify(filterService).filterEvent(eq(event), eq(setOf("a", "b", "c")))
         verify(umamiService).sendEvent(eq(filteredEvent), eq(userAgent))
