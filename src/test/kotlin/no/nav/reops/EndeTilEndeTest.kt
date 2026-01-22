@@ -17,14 +17,11 @@ import org.wiremock.spring.EnableWireMock
 import org.wiremock.spring.InjectWireMock
 import tools.jackson.databind.node.JsonNodeFactory
 import java.time.Duration
+import java.util.UUID
 
 @SpringBootTest
 @ActiveProfiles("test")
-@EnableWireMock(
-    ConfigureWireMock(
-        name = "umami-mock", port = 0
-    )
-)
+@EnableWireMock(ConfigureWireMock(name = "umami-mock", port = 0))
 @EmbeddedKafka(
     partitions = 1, topics = ["test-topic"], bootstrapServersProperty = "spring.kafka.bootstrap-servers"
 )
@@ -37,7 +34,7 @@ class EndeTilEndeTest {
     lateinit var kafkaTemplate: KafkaTemplate<String, Event>
 
     @Test
-    fun `skal kunne konsumere hendelse på kafka`() {
+    fun `skal kunne konsumere hendelse på kafka uten data`() {
         umamiMock.stubFor(
             post(urlEqualTo("/api/send")).willReturn(
                 aResponse().withStatus(200)
@@ -50,7 +47,7 @@ class EndeTilEndeTest {
         val event = Event(
             type = "visit",
             payload = Event.Payload(
-                website = "https://kake.no/",
+                website = UUID.randomUUID(),
                 hostname = "localhost",
                 screen = "12345678910",
                 language = "nb",
@@ -73,9 +70,10 @@ class EndeTilEndeTest {
             umamiMock.verify(
                 postRequestedFor(urlEqualTo("/api/send"))
                     .withHeader("User-Agent", equalTo("test-agent"))
-                    .withRequestBody(containing("12345678910"))
-                    .withRequestBody(containing("john.doe@kake.no"))
-                    .withRequestBody(containing("https://kake.no/12345678910"))
+                    .withRequestBody(notContaining("12345678910"))
+                    .withRequestBody(notContaining("john.doe@kake.no"))
+                    .withRequestBody(containing("[PROXY-EMAIL]"))
+                    .withRequestBody(containing("https://kake.no/[PROXY-FNR]"))
                     .withRequestBody(containing("https://kake.no/"))
             )
         }
@@ -92,7 +90,7 @@ class EndeTilEndeTest {
             )
         )
 
-        val dataNode = JsonNodeFactory.instance.objectNode()
+        val data = JsonNodeFactory.instance.objectNode()
             .put("hest", "er best")
             .put("antall", 42)
             .put("liker-hest", true)
@@ -100,14 +98,14 @@ class EndeTilEndeTest {
         val event = Event(
             type = "visit",
             payload = Event.Payload(
-                website = "https://kake.no/",
+                website = UUID.randomUUID(),
                 hostname = "localhost",
                 screen = "12345678910",
                 language = "nb",
                 title = "john.doe@kake.no",
                 url = "https://kake.no/12345678910",
                 referrer = "https://kake.no/",
-                data = dataNode
+                data = data
             )
         )
 
@@ -124,11 +122,11 @@ class EndeTilEndeTest {
             umamiMock.verify(
                 postRequestedFor(urlEqualTo("/api/send"))
                     .withHeader("User-Agent", equalTo("test-agent"))
-                    .withRequestBody(containing("12345678910"))
-                    .withRequestBody(containing("john.doe@kake.no"))
-                    .withRequestBody(containing("https://kake.no/12345678910"))
+                    .withRequestBody(notContaining("12345678910"))
+                    .withRequestBody(notContaining("john.doe@kake.no"))
+                    .withRequestBody(containing("[PROXY-EMAIL]"))
+                    .withRequestBody(containing("https://kake.no/[PROXY-FNR]"))
                     .withRequestBody(containing("https://kake.no/"))
-                    // optional: verify data keys are present
                     .withRequestBody(containing("\"hest\""))
                     .withRequestBody(containing("\"antall\""))
                     .withRequestBody(containing("\"liker-hest\""))

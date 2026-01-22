@@ -22,7 +22,7 @@ class FilterServiceExcludeFiltersTest {
                         "user_email" to "user@example.com",
                         "event_properties" to mapOf(
                             "email" to "deep@example.com",
-                            "ssn" to "12345678901"
+                            "ssn" to "12345678910"
                         )
                     )
                 )
@@ -34,7 +34,7 @@ class FilterServiceExcludeFiltersTest {
 
         val props = out.payload.data.get("event_properties")
         assertEquals("deep@example.com", props.get("email").asString())
-        assertEquals("12345678901", props.get("ssn").asString())
+        assertEquals("12345678910", props.get("ssn").asString())
     }
 
     @Test

@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.nav.reops.event.Event
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.util.UUID
 
 class FilterServiceStructuralTransformsTest {
 
@@ -16,7 +17,7 @@ class FilterServiceStructuralTransformsTest {
         val event = Event(
             type = "event",
             payload = Event.Payload(
-                website = "my-website-id",
+                website = UUID.randomUUID(),
                 hostname = "https://example.nav.no",
                 screen = "ok",
                 language = "nb",
@@ -29,7 +30,7 @@ class FilterServiceStructuralTransformsTest {
                         "device_id" to "device-123",
 
                         "user_email" to "john.doe@example.com",
-                        "user_ssn" to "12345678901",
+                        "user_ssn" to "12345678910",
                         "phone" to "98765432",
                         "navident" to "X123456",
 
@@ -122,7 +123,7 @@ class FilterServiceStructuralTransformsTest {
             payload = base.payload.copy(
                 data = TestEventFactory.jsonNode(
                     mapOf(
-                        "idfa" to "12345678-1234-1234-1234-123456789012",
+                        "idfa" to "12345678-1234-1234-1234-123456789102",
                         "idfv" to "ABCDEF01-2345-6789-ABCD-EF0123456789",
                         "gaid" to "38400000-8cf0-11bd-b23e-10b96e40000d",
                         "adid" to "38400000-8cf0-11bd-b23e-10b96e40000d",

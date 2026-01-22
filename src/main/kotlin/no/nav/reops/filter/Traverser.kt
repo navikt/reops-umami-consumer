@@ -20,44 +20,25 @@ internal class Traverser(
 
             node.isString -> {
                 val raw = node.asString()
-                val out = if (urlPolicy.isUrlField(ctx)) {
-                    urlPolicy.redactUrl(raw, redactor)
-                } else {
-                    redactor.redact(input = raw, excludedLabels = emptySet(), preserveUrls = true)
+                val out = when {
+                    urlPolicy.isUrlField(ctx) -> urlPolicy.redactUrl(raw, redactor, excludePathLabels = true)
+                    urlPolicy.isUrlLikeField(ctx) -> urlPolicy.redactUrl(raw, redactor, excludePathLabels = true)
+                    else -> redactor.redact(input = raw, excludedLabels = emptySet(), preserveUrls = true)
                 }
-                JsonNodeFactory.instance.textNode(out)
+                JsonNodeFactory.instance.stringNode(out)
             }
 
-            node.isNumber -> {
-                // Only redact “integral-looking” numbers; otherwise keep as-is (to avoid breaking decimals).
-                val plain = node.numberValue()?.toPlainIntegralStringOrNull()
-                if (plain == null) node
-                else {
-                    val redacted = redactor.redact(plain)
-                    if (redacted == plain) node else JsonNodeFactory.instance.textNode(redacted)
-                }
-            }
-
-            node.isBoolean -> {
-                val raw = node.asBoolean().toString()
-                val redacted = redactor.redact(raw)
-                if (redacted == raw) node else JsonNodeFactory.instance.textNode(redacted)
-            }
-
+            node.isNumber -> node
+            node.isBoolean -> node
             node.isObject -> transformObject(node as ObjectNode, ctx)
-
             node.isArray -> transformArray(node as ArrayNode, ctx)
-
             else -> node
         }
     }
 
     private fun transformObject(obj: ObjectNode, ctx: NodeContext): JsonNode {
         val out = JsonNodeFactory.instance.objectNode()
-
-        // Iterate entries (your relocated Jackson supports properties() as we used on producer side)
         for ((key, value) in obj.properties()) {
-            // If key matches excludeFilters, keep subtree untouched.
             if (key in excludeFilters) {
                 out.set(key, value)
                 continue
@@ -65,14 +46,17 @@ internal class Traverser(
 
             when (val decision = keyPolicy.decide(key, value)) {
                 is KeyPolicy.Decision.Drop -> {
-                    // omit key
+                    // ignore
                 }
+
                 is KeyPolicy.Decision.Preserve -> {
                     out.set(key, decision.value as? JsonNode ?: value)
                 }
+
                 is KeyPolicy.Decision.Replace -> {
                     out.set(key, toJsonNode(decision.value))
                 }
+
                 is KeyPolicy.Decision.None -> {
                     val childCtx = NodeContext(
                         depth = ctx.depth + 1,
@@ -94,10 +78,8 @@ internal class Traverser(
 
     private fun transformArray(arr: ArrayNode, ctx: NodeContext): JsonNode {
         val out = JsonNodeFactory.instance.arrayNode()
-        var idx = 0
         for (child in arr) {
             out.add(transformNode(child, ctx.copy(depth = ctx.depth + 1, containerKey = null, key = null)))
-            idx++
         }
         return out
     }
@@ -107,7 +89,7 @@ internal class Traverser(
         return when (value) {
             null -> f.nullNode()
             is JsonNode -> value
-            is String -> f.textNode(value)
+            is String -> f.stringNode(value)
             is Boolean -> f.booleanNode(value)
             is Int -> f.numberNode(value)
             is Long -> f.numberNode(value)
@@ -115,14 +97,7 @@ internal class Traverser(
             is Float -> f.numberNode(value)
             is java.math.BigInteger -> f.numberNode(value)
             is java.math.BigDecimal -> f.numberNode(value)
-            else -> f.textNode(value.toString())
+            else -> f.stringNode(value.toString())
         }
-    }
-
-    private fun Number.toPlainIntegralStringOrNull(): String? = when (this) {
-        is Byte, is Short, is Int, is Long -> this.toLong().toString()
-        is java.math.BigInteger -> this.toString()
-        is java.math.BigDecimal -> if (this.stripTrailingZeros().scale() <= 0) this.toBigIntegerExact().toString() else null
-        else -> null
     }
 }

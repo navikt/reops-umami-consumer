@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.ExchangeFunction
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import java.util.UUID
 
 class UmamiServiceTest {
 
@@ -31,7 +32,7 @@ class UmamiServiceTest {
         val service = UmamiService(webClient, registry)
         val event = Event(
             type = "visit", payload = Event.Payload(
-                website = "https://kake.no/",
+                website = UUID.randomUUID(),
                 hostname = "localhost",
                 screen = "12345678910",
                 language = "nb",

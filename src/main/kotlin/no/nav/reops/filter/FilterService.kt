@@ -6,11 +6,7 @@ import no.nav.reops.event.Event
 import org.springframework.stereotype.Service
 
 data class RedactionRule(
-    val name: String,
-    val label: String,
-    val regex: Regex,
-    val counter: Counter,
-    val preserve: Boolean = false
+    val name: String, val label: String, val regex: Regex, val counter: Counter, val preserve: Boolean = false
 )
 
 @Service
@@ -27,53 +23,47 @@ class FilterService(
     )
 
     private val urlPolicy = UrlPolicy(
-        // Only nested data.payload.url/referrer are treated as URL fields in traversal.
-        // payload.url/referrer are handled directly in filterEvent().
         isNestedUrlField = { ctx ->
-            ctx.depth == 2 &&
-                    ctx.containerKey == "payload" &&
-                    (ctx.key == "url" || ctx.key == "referrer")
+            ctx.depth == 2 && ctx.containerKey == "payload" && (ctx.key == "url" || ctx.key == "referrer")
         },
-        // URL path-part exclusions required by tests
-        pathExcludedLabels = setOf("PROXY-FILEPATH", "PROXY-FNR", "PROXY-ACCOUNT")
+
+        urlLikeKeys = setOf(
+            "path",
+            "href",
+            "destinasjon",
+            "url",
+            "link",
+            "pathname",
+            "linkText",
+            "destination",
+            "url_path",
+            "fra",
+            "lenketekst",
+            "lenkesti",
+            "newLocation",
+            "prevLocation"
+        ), pathExcludedLabels = setOf("PROXY-FILEPATH")
     )
 
     private val redactor = Redactor(rules)
 
-    /**
-     * Filters an event with optional per-event key exclusions.
-     *
-     * excludeFilters: set of keys (e.g. "hostname", "screen", "language", "url")
-     * If a key matches:
-     *  - its value is not redacted
-     *  - and for map values, traversal is not performed under that key
-     */
     fun filterEvent(event: Event, excludeFilters: Set<String> = emptySet()): Event {
         val p = event.payload
-
-        // Traverser is per-event because excludeFilters is per event/header.
         val traverser = Traverser(keyPolicy, urlPolicy, redactor, excludeFilters)
-
         val sanitized = p.copy(
             website = p.website,
-
-            // These are currently preserved by design, but excludeFilters is applied anyway
-            // so behavior stays correct if you later decide to redact them.
-            hostname = if ("hostname" in excludeFilters) p.hostname else p.hostname,
-            screen = if ("screen" in excludeFilters) p.screen else p.screen,
-            language = if ("language" in excludeFilters) p.language else p.language,
-            title = if ("title" in excludeFilters) p.title else p.title,
-
-            // URL policy for top-level payload URLs, unless excluded
-            url = if ("url" in excludeFilters) p.url else p.url?.let { urlPolicy.redactUrl(it, redactor) },
-            referrer = if ("referrer" in excludeFilters) p.referrer else p.referrer?.let { urlPolicy.redactUrl(it, redactor) },
-
-            // If someone excludes "data", keep it unchanged.
-            data = if ("data" in excludeFilters) p.data else p.data?.let { traverser.transform(it) }
-        )
+            hostname = if ("hostname" in excludeFilters) p.hostname else redactField(p.hostname),
+            screen = if ("screen" in excludeFilters) p.screen else redactField(p.screen),
+            language = if ("language" in excludeFilters) p.language else redactField(p.language),
+            title = if ("title" in excludeFilters) p.title else redactField(p.title),
+            url = if ("url" in excludeFilters) p.url else redactField(p.url),
+            referrer = if ("referrer" in excludeFilters) p.referrer else redactField(p.referrer),
+            data = if ("data" in excludeFilters) p.data else p.data?.let { traverser.transform(it) })
 
         return event.copy(payload = sanitized)
     }
+
+    private fun redactField(value: String?): String? = value?.let { urlPolicy.redactUrl(it, redactor) }
 
     private fun buildRules(meterRegistry: MeterRegistry): List<RedactionRule> = listOf(
         RedactionRule(

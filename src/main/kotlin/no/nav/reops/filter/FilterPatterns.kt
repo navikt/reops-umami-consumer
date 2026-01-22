@@ -18,17 +18,23 @@ internal object FilterPatterns {
     val ACCOUNT_REGEX = Regex("(?<!\\d)\\d{4}\\.?\\d{2}\\.?\\d{5}(?!\\d)")
     val ORG_NUMBER_REGEX = Regex("(?<!\\d)\\d{9}(?!\\d)")
     val LICENSE_PLATE_REGEX = Regex("(?<![a-zA-Z])[A-Z]{2}\\s?\\d{5}(?!\\d)")
-    val SEARCH_REGEX = Regex("[?&](?:q|query|search|k|ord)=[^&]+")
+    val SEARCH_REGEX = Regex("[?&](?:q|query|search|k|ord)=[^&\\s]+")
 
     val UUID_REGEX =
         Regex("(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b")
-
     // Used only to preserve URL-like substrings in free-text (not for payload.url/referrer).
+    // IMPORTANT: We preserve only the path-part (up to ? or #). Query strings and fragments may contain PII
+    // and must be redacted normally.
     val URL_REGEX = Regex(
         pattern = """(?x)
-            (?:(?:https?://[A-Za-z0-9._\-]+(?:\.[A-Za-z0-9._\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._\-/@%?&=]*)?)
-            |
-            (?:(?<!@)[A-Za-z0-9._\-]+\.[A-Za-z]{2,}(?:/[A-Za-z0-9._\-/@%?&=]+)))
+            (?:
+                # URLs with http/https protocol (match up to ? or #)
+                https?://[A-Za-z0-9._\-]+(?:\.[A-Za-z0-9._\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._\-/@%&=]*)?
+                |
+                # Domain-like patterns without protocol: domain.tld/path (match up to ? or #)
+                # Avoid matching as part of email/word by ensuring not preceded by word/email characters.
+                (?<![A-Za-z0-9._%+\-@])[A-Za-z0-9._\-]+\.[A-Za-z]{2,}/[A-Za-z0-9._\-/@%&=]+
+            )
         """.trimIndent(),
         options = setOf(RegexOption.COMMENTS)
     )

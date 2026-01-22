@@ -3,6 +3,7 @@ package no.nav.reops.filter
 import no.nav.reops.event.Event
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.node.JsonNodeFactory
+import java.util.UUID
 
 internal object TestEventFactory {
 
@@ -52,12 +53,12 @@ internal object TestEventFactory {
     fun minimalEvent(): Event {
         return Event(
             type = "visit", payload = Event.Payload(
-                website = "https://kake.no/",
+                website = UUID.randomUUID(),
                 hostname = "localhost",
-                screen = "12345678901",
+                screen = "12345678910",
                 language = "nb",
                 title = "john.doe@kake.no",
-                url = "https://kake.no/12345678901",
+                url = "https://kake.no/12345678910",
                 referrer = "https://kake.no/",
                 data = json(mapOf("hest" to "er best", "antall" to 42, "liker-hest" to true))
             )

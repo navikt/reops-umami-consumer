@@ -3,7 +3,9 @@ package no.nav.reops.filter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.util.UUID
 
 class FilterServiceRedactionRulesTest {
 
@@ -34,12 +36,13 @@ class FilterServiceRedactionRulesTest {
         val event = TestEventFactory.eventWithData(value)
 
         val out = service.filterEvent(event)
-        val outText = out.payload.data.toString()
+        val outText = out.payload.data!!.get("text").asString()
 
-        assertEquals(true, outText.contains(keep))
-        assertEquals(true, outText.contains(uuid))
-        assertEquals(true, outText.contains("url1=https://example.com/path?q=1"))
-        assertEquals(true, outText.contains("url2=example.com/path"))
+        assertTrue(outText.contains(uuid))
+        assertTrue(outText.contains("url1="))
+        assertTrue(outText.contains("https://example.com/path"))
+        assertTrue(outText.contains("[PROXY-SEARCH]"))
+        assertTrue(outText.contains("url2=$url2"))
     }
 
     @Test
@@ -93,15 +96,17 @@ class FilterServiceRedactionRulesTest {
     fun `filterEvent redacts pii fields recursively in data`() {
         val service = filterService()
 
+        val website = UUID.randomUUID()
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
             type = "event",
             payload = base.payload.copy(
+                website = website,
                 data = TestEventFactory.jsonNode(
                     mapOf(
                         "user_email" to "user@example.com",
                         "user_id" to "550e8400-e29b-41d4-a716-446655440000",
-                        "ssn" to "12345678901",
+                        "ssn" to "12345678910",
                         "phone" to "98765432",
                         "ip_address" to "192.168.1.1",
                         "event_properties" to mapOf(
@@ -119,6 +124,10 @@ class FilterServiceRedactionRulesTest {
 
         val expected = event.copy(
             payload = event.payload.copy(
+                website = website,
+                url = "https://kake.no/[PROXY-FNR]",
+                screen = "[PROXY-FNR]",
+                title = "[PROXY-EMAIL]",
                 data = TestEventFactory.jsonNode(
                     mapOf(
                         "user_email" to "[PROXY-EMAIL]",
@@ -130,6 +139,107 @@ class FilterServiceRedactionRulesTest {
                             "account" to "[PROXY-ACCOUNT]",
                             "navident" to "[PROXY-NAVIDENT]",
                             "regular_field" to "This is normal text"
+                        )
+                    )
+                )
+            )
+        )
+
+        assertEquals(expected, out)
+    }
+
+    @Test
+    fun `filterEvent redacts comprehensive umami payload data`() {
+        val service = filterService()
+
+        val website = UUID.randomUUID()
+        val base = TestEventFactory.minimalEvent()
+        val event = base.copy(
+            type = "event",
+            payload = base.payload.copy(
+                website = website,
+                hostname = "https://kake.no/12345678910",
+                screen = "https://kake.no/12345678910",
+                language = "https://kake.no/12345678910",
+                title = "https://kake.no/12345678910",
+                url = "https://kake.no/12345678910",
+                referrer = "https://kake.no/12345678910",
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "api_key" to "abc123",
+                        "device_id" to "device-123",
+                        "user_email" to "john.doe@example.com",
+                        "user_id" to "550e8400-e29b-41d4-a716-446655440000",
+                        "user_ssn" to "12345678910",
+                        "phone" to "98765432",
+                        "navident" to "X123456",
+                        "ip_address" to "192.168.1.100",
+                        "ip" to "10.0.0.1",
+                        "idfa" to "8D8AC610-566D-4EF0-9C22-186B2A5ED793",
+                        "idfv" to "550E8400-E29B-41D4-A716-446655440000",
+                        "adid" to "38400000-8cf0-11bd-b23e-10b96e40000d",
+                        "gaid" to "12345678-90ab-cdef-1234-567890abcdef",
+                        "android_id" to "9774d56d682e549c",
+                        "aaid" to "df07c7dc-cea7-4a89-b328-810ff5acb15d",
+                        "msai" to "6F9619FF-8B86-D011-B42D-00C04FC964FF",
+                        "advertising_id" to "00000000-0000-0000-0000-000000000000",
+                        "account_number" to "1234.56.78901",
+                        "license_plate" to "AB12345",
+                        "org_number" to "123456789",
+                        "file_path" to "/home/john/Documents/secret.pdf",
+                        "name" to "John Doe",
+                        "address" to "0123 Oslo",
+                        "uuid" to "550e8400-e29b-41d4-a716-446655440000",
+                        "website_url" to "https://example.com/page",
+                        "event_properties" to mapOf(
+                            "card_number" to "1234 5678 9012 3456",
+                            "regular_text" to "This is fine"
+                        )
+                    )
+                )
+            )
+        )
+
+        val out = service.filterEvent(event)
+
+        val expected = event.copy(
+            payload = event.payload.copy(
+                website = website,
+                hostname = "https://kake.no/[PROXY-FNR]",
+                screen = "https://kake.no/[PROXY-FNR]",
+                language = "https://kake.no/[PROXY-FNR]",
+                title = "https://kake.no/[PROXY-FNR]",
+                url = "https://kake.no/[PROXY-FNR]",
+                referrer = "https://kake.no/[PROXY-FNR]",
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "api_key" to "abc123",
+                        "device_id" to "device-123",
+                        "user_email" to "[PROXY-EMAIL]",
+                        "user_id" to "550e8400-e29b-41d4-a716-446655440000",
+                        "user_ssn" to "[PROXY-FNR]",
+                        "phone" to "[PROXY-PHONE]",
+                        "navident" to "[PROXY-NAVIDENT]",
+                        "ip" to "\$remote",
+                        "idfa" to "[PROXY]",
+                        "idfv" to "[PROXY]",
+                        "adid" to "[PROXY]",
+                        "gaid" to "[PROXY]",
+                        "android_id" to "[PROXY]",
+                        "aaid" to "[PROXY]",
+                        "msai" to "[PROXY]",
+                        "advertising_id" to "[PROXY]",
+                        "account_number" to "[PROXY-ACCOUNT]",
+                        "license_plate" to "[PROXY-LICENSE-PLATE]",
+                        "org_number" to "[PROXY-ORG-NUMBER]",
+                        "file_path" to "[PROXY-FILEPATH]",
+                        "name" to "[PROXY-NAME]",
+                        "address" to "[PROXY-ADDRESS]",
+                        "uuid" to "550e8400-e29b-41d4-a716-446655440000",
+                        "website_url" to "https://example.com/page",
+                        "event_properties" to mapOf(
+                            "card_number" to "1234 5678 9012 3456",
+                            "regular_text" to "This is fine"
                         )
                     )
                 )

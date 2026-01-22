@@ -79,7 +79,7 @@ class FilterServiceUrlPolicyTest {
     }
 
     @Test
-    fun `filterEvent redacts filepath for nested non payload url fields`() {
+    fun `filterEvent does not redact filepath for nested non payload url fields`() {
         val service = filterService()
 
         val base = TestEventFactory.minimalEvent()
@@ -105,16 +105,15 @@ class FilterServiceUrlPolicyTest {
         assertEquals("/home/user/documents/file.txt", out.payload.url)
 
         val inner = out.payload.data!!.get("data")
-        assertEquals("[PROXY-FILEPATH]", inner.get("url").asString())
+        assertEquals("/var/www/html/index.php", inner.get("url").asString())
 
         val cfg = inner.get("config")
-        assertEquals("[PROXY-FILEPATH]", cfg.get("url").asString())
+        assertEquals("C:\\Users\\Admin\\file.exe", cfg.get("url").asString())
     }
 
     @Test
     fun `filterEvent redacts filepath in payload url query string`() {
         val service = filterService()
-
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
             type = "event",
@@ -128,7 +127,6 @@ class FilterServiceUrlPolicyTest {
     @Test
     fun `filterEvent redacts pii in payload url query string`() {
         val service = filterService()
-
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
             type = "event",
@@ -142,11 +140,10 @@ class FilterServiceUrlPolicyTest {
     @Test
     fun `filterEvent redacts mixed pii and filepath in payload url query string`() {
         val service = filterService()
-
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
             type = "event",
-            payload = base.payload.copy(url = "/api/data?path=/var/log/app.log&ssn=12345678901&redirect=/home/user/file.pdf")
+            payload = base.payload.copy(url = "/api/data?path=/var/log/app.log&ssn=12345678910&redirect=/home/user/file.pdf")
         )
 
         val out = service.filterEvent(event)
@@ -156,7 +153,6 @@ class FilterServiceUrlPolicyTest {
     @Test
     fun `filterEvent keeps payload url without query unchanged`() {
         val service = filterService()
-
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
             type = "event",
@@ -170,7 +166,6 @@ class FilterServiceUrlPolicyTest {
     @Test
     fun `filterEvent keeps payload url path that only looks like windows path unchanged`() {
         val service = filterService()
-
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
             type = "event",
@@ -184,7 +179,6 @@ class FilterServiceUrlPolicyTest {
     @Test
     fun `filterEvent redacts pii in payload url and referrer paths`() {
         val service = filterService()
-
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
             type = "event",
