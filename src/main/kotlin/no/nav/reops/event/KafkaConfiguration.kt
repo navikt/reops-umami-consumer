@@ -32,9 +32,7 @@ class KafkaConfiguration(
         }
 
         return DefaultKafkaConsumerFactory(
-            configProps,
-            StringDeserializer(),
-            valueDeserializer
+            configProps, StringDeserializer(), valueDeserializer
         )
     }
 

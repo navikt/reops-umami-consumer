@@ -15,24 +15,17 @@ internal class UrlPolicy(
 
     fun redactUrl(url: String, redactor: Redactor, excludePathLabels: Boolean = true): String {
         val pathLabels = if (excludePathLabels) pathExcludedLabels else emptySet()
-        val q = url.indexOf('?')
-        if (q < 0) {
-            return redactor.redact(
-                input = url, excludedLabels = pathLabels, preserveUrls = false
-            )
-        }
+        val (path, queryOrEmpty) = splitPathAndQuery(url)
+        val redactedPath = redactor.redact(input = path, excludedLabels = pathLabels, preserveUrls = false)
 
-        val path = url.substring(0, q)
-        val query = url.substring(q)
+        if (queryOrEmpty.isEmpty()) return redactedPath
 
-        val redactedPath = redactor.redact(
-            input = path, excludedLabels = pathLabels, preserveUrls = false
-        )
-
-        val redactedQuery = redactor.redact(
-            input = query, excludedLabels = emptySet(), preserveUrls = false
-        )
-
+        val redactedQuery = redactor.redact(input = queryOrEmpty, excludedLabels = emptySet(), preserveUrls = false)
         return redactedPath + redactedQuery
+    }
+
+    private fun splitPathAndQuery(url: String): Pair<String, String> {
+        val q = url.indexOf('?')
+        return if (q < 0) url to "" else url.substring(0, q) to url.substring(q)
     }
 }

@@ -15,14 +15,11 @@ class FilterServiceExcludeFiltersTest {
 
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
+            type = "event", payload = base.payload.copy(
                 data = TestEventFactory.jsonNode(
                     mapOf(
-                        "user_email" to "user@example.com",
-                        "event_properties" to mapOf(
-                            "email" to "deep@example.com",
-                            "ssn" to "12345678910"
+                        "user_email" to "user@example.com", "event_properties" to mapOf(
+                            "email" to "deep@example.com", "ssn" to "12345678910"
                         )
                     )
                 )
@@ -43,8 +40,7 @@ class FilterServiceExcludeFiltersTest {
 
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(url = "/search?email=user@example.com&phone=98765432")
+            type = "event", payload = base.payload.copy(url = "/search?email=user@example.com&phone=98765432")
         )
 
         val out = service.filterEvent(event, excludeFilters = setOf("url"))

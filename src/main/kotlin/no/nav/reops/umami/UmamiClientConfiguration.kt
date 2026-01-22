@@ -10,8 +10,5 @@ class UmamiClientConfiguration(
     @Value("\${reops.umami.url}") private val umamiUrl: String
 ) {
     @Bean
-    fun umamiClient(): WebClient =
-        WebClient.builder()
-            .baseUrl(umamiUrl)
-            .build()
+    fun umamiClient(): WebClient = WebClient.builder().baseUrl(umamiUrl).build()
 }

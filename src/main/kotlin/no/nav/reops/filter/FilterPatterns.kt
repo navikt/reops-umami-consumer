@@ -9,10 +9,8 @@ internal object FilterPatterns {
     val IP_REGEX = Regex("(?<!\\d)\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?!\\d)")
     val PHONE_REGEX = Regex("(?<!\\d)[2-9]\\d{7}(?!\\d)")
 
-    val NAME_REGEX =
-        Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}\\s[A-ZÆØÅ][a-zæøå]{1,20}(?:\\s[A-ZÆØÅ][a-zæøå]{1,20})?\\b")
-    val ADDRESS_REGEX =
-        Regex("\\b\\d{4}\\s[A-ZÆØÅ][A-ZÆØÅa-zæøå]+(?:\\s[A-ZÆØÅa-zæøå]+)*\\b")
+    val NAME_REGEX = Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}\\s[A-ZÆØÅ][a-zæøå]{1,20}(?:\\s[A-ZÆØÅ][a-zæøå]{1,20})?\\b")
+    val ADDRESS_REGEX = Regex("\\b\\d{4}\\s[A-ZÆØÅ][A-ZÆØÅa-zæøå]+(?:\\s[A-ZÆØÅa-zæøå]+)*\\b")
 
     val SECRET_ADDRESS_REGEX = Regex("(?i)hemmelig(?:%20|\\s+)(?:20\\s*%(?:%20|\\s+))?adresse")
     val ACCOUNT_REGEX = Regex("(?<!\\d)\\d{4}\\.?\\d{2}\\.?\\d{5}(?!\\d)")
@@ -20,67 +18,49 @@ internal object FilterPatterns {
     val LICENSE_PLATE_REGEX = Regex("(?<![a-zA-Z])[A-Z]{2}\\s?\\d{5}(?!\\d)")
     val SEARCH_REGEX = Regex("[?&](?:q|query|search|k|ord)=[^&\\s]+")
 
-    val UUID_REGEX =
-        Regex("(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b")
+    val UUID_REGEX = Regex("(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b")
+
     // Used only to preserve URL-like substrings in free-text (not for payload.url/referrer).
-    // IMPORTANT: We preserve only the path-part (up to ? or #). Query strings and fragments may contain PII
-    // and must be redacted normally.
+    // IMPORTANT: Preserve only path-part (up to ? or #). Query strings/fragments may contain PII.
     val URL_REGEX = Regex(
         pattern = """(?x)
             (?:
-                # URLs with http/https protocol (match up to ? or #)
                 https?://[A-Za-z0-9._\-]+(?:\.[A-Za-z0-9._\-]+)*(?::[0-9]+)?(?:/[A-Za-z0-9._\-/@%&=]*)?
                 |
-                # Domain-like patterns without protocol: domain.tld/path (match up to ? or #)
-                # Avoid matching as part of email/word by ensuring not preceded by word/email characters.
                 (?<![A-Za-z0-9._%+\-@])[A-Za-z0-9._\-]+\.[A-Za-z]{2,}/[A-Za-z0-9._\-/@%&=]+
             )
-        """.trimIndent(),
-        options = setOf(RegexOption.COMMENTS)
+        """.trimIndent(), options = setOf(RegexOption.COMMENTS)
     )
 
     val FILEPATH_REGEX = Regex(
         """(?x)
             (?:
-                # Windows absolute paths: C:\path\to\file or C:/path/to/file
                 [A-Za-z]:[/\\]
                 (?:[A-Za-z0-9._\-\s%]+[/\\])*
                 [A-Za-z0-9._\-\s%]+
                 (?:\.[A-Za-z0-9]{1,10})?
                 |
-                # Windows UNC paths: \\server\share\path\file
                 \\\\[A-Za-z0-9._\-]+\\[A-Za-z0-9._\-]+
                 (?:\\[A-Za-z0-9._\-\s]+)*
                 (?:\\[A-Za-z0-9._\-\s]+(?:\.[A-Za-z0-9]{1,10})?)?
                 |
-                # file:// protocol URIs
                 file:///
                 [A-Za-z0-9._\-\s/%:]+
                 (?:\.[A-Za-z0-9]{1,10})?
                 |
-                # Unix/Mac absolute paths
                 (?:(?:/[A-Za-z0-9._\-]+(?:/[A-Za-z0-9._\-]+)+(?:\.[A-Za-z0-9]{1,10})?)
                 |
                 (?:/(?=.*[A-Za-z])[A-Za-z0-9._\-]+\.[A-Za-z0-9]{1,10}))
                 |
-                # Relative paths: ./path, ../path, ~/path
                 (?:\./|\.\./|~/)
                 (?:[A-Za-z0-9._\-]+/)*
                 [A-Za-z0-9._\-]+
                 (?:\.[A-Za-z0-9]{1,10})?
             )
-        """.trimIndent(),
-        options = setOf(RegexOption.COMMENTS)
+        """.trimIndent(), options = setOf(RegexOption.COMMENTS)
     )
 
     val ADVERTISING_ID_KEYS: Set<String> = setOf(
-        "idfa",
-        "idfv",
-        "adid",
-        "gaid",
-        "android_id",
-        "aaid",
-        "msai",
-        "advertising_id"
+        "idfa", "idfv", "adid", "gaid", "android_id", "aaid", "msai", "advertising_id"
     )
 }

@@ -15,47 +15,30 @@ import java.time.Duration
 
 @Service
 class UmamiService(
-    private val umamiClient: WebClient,
-    meterRegistry: MeterRegistry
+    private val umamiClient: WebClient, meterRegistry: MeterRegistry
 ) {
     private val umamiRequestsSuccess: Counter =
-        Counter.builder("umami_requests_total")
-            .tag("result", "success")
-            .register(meterRegistry)
+        Counter.builder("umami_requests_total").tag("result", "success").register(meterRegistry)
 
     private val umamiRequestsFailure: Counter =
-        Counter.builder("umami_requests_total")
-            .tag("result", "failure")
-            .register(meterRegistry)
+        Counter.builder("umami_requests_total").tag("result", "failure").register(meterRegistry)
 
     fun sendEvent(event: Event, userAgent: String) {
         try {
-            umamiClient.post()
-                .uri("/api/send")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("User-Agent", userAgent)
-                .bodyValue(event)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError) { resp ->
-                    resp.bodyToMono<String>()
-                        .defaultIfEmpty("")
-                        .flatMap { body ->
+            umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON).header("User-Agent", userAgent)
+                .bodyValue(event).retrieve().onStatus(HttpStatusCode::isError) { resp ->
+                    resp.bodyToMono<String>().defaultIfEmpty("").flatMap { body ->
                             LOG.error("Umami responded with status=${resp.statusCode().value()} body=$body")
                             Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
                         }
-                }
-                .bodyToMono<String>()
-                .defaultIfEmpty("")
-                .doOnNext { body ->
+                }.bodyToMono<String>().defaultIfEmpty("").doOnNext { body ->
                     LOG.info("Umami response body=$body")
                     umamiRequestsSuccess.increment()
-                }
-                .onErrorResume { ex ->
+                }.onErrorResume { ex ->
                     umamiRequestsFailure.increment()
                     LOG.error("Failed to send event to Umami", ex)
                     Mono.empty()
-                }
-                .block(Duration.ofSeconds(5))
+                }.block(Duration.ofSeconds(5))
         } catch (ex: Exception) {
             umamiRequestsFailure.increment()
             LOG.error("Failed to send event to Umami", ex)

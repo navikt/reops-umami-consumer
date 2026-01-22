@@ -15,8 +15,7 @@ class FilterServiceStructuralTransformsTest {
         val service = filterService()
 
         val event = Event(
-            type = "event",
-            payload = Event.Payload(
+            type = "event", payload = Event.Payload(
                 website = UUID.randomUUID(),
                 hostname = "https://example.nav.no",
                 screen = "ok",
@@ -69,8 +68,7 @@ class FilterServiceStructuralTransformsTest {
 
         val expected = event.copy(
             payload = event.payload.copy(
-                hostname = "https://example.nav.no",
-                data = TestEventFactory.jsonNode(
+                hostname = "https://example.nav.no", data = TestEventFactory.jsonNode(
                     mapOf(
                         "api_key" to "abc123",
                         "device_id" to "device-123",
@@ -119,8 +117,7 @@ class FilterServiceStructuralTransformsTest {
 
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
+            type = "event", payload = base.payload.copy(
                 data = TestEventFactory.jsonNode(
                     mapOf(
                         "idfa" to "12345678-1234-1234-1234-123456789102",

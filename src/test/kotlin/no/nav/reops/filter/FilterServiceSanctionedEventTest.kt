@@ -15,8 +15,7 @@ class FilterServiceSanctionedEventTest {
 
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
+            type = "event", payload = base.payload.copy(
                 website = UUID.randomUUID(),
                 hostname = "arbeidsplassen.nav.no",
                 screen = "3440x1440",

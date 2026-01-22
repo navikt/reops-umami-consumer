@@ -99,10 +99,8 @@ class FilterServiceRedactionRulesTest {
         val website = UUID.randomUUID()
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
-                website = website,
-                data = TestEventFactory.jsonNode(
+            type = "event", payload = base.payload.copy(
+                website = website, data = TestEventFactory.jsonNode(
                     mapOf(
                         "user_email" to "user@example.com",
                         "user_id" to "550e8400-e29b-41d4-a716-446655440000",
@@ -155,8 +153,7 @@ class FilterServiceRedactionRulesTest {
         val website = UUID.randomUUID()
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
+            type = "event", payload = base.payload.copy(
                 website = website,
                 hostname = "https://kake.no/12345678910",
                 screen = "https://kake.no/12345678910",
@@ -192,8 +189,7 @@ class FilterServiceRedactionRulesTest {
                         "uuid" to "550e8400-e29b-41d4-a716-446655440000",
                         "website_url" to "https://example.com/page",
                         "event_properties" to mapOf(
-                            "card_number" to "1234 5678 9012 3456",
-                            "regular_text" to "This is fine"
+                            "card_number" to "1234 5678 9012 3456", "regular_text" to "This is fine"
                         )
                     )
                 )
@@ -238,8 +234,7 @@ class FilterServiceRedactionRulesTest {
                         "uuid" to "550e8400-e29b-41d4-a716-446655440000",
                         "website_url" to "https://example.com/page",
                         "event_properties" to mapOf(
-                            "card_number" to "1234 5678 9012 3456",
-                            "regular_text" to "This is fine"
+                            "card_number" to "1234 5678 9012 3456", "regular_text" to "This is fine"
                         )
                     )
                 )

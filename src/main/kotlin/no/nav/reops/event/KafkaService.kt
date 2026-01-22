@@ -34,11 +34,7 @@ class KafkaService(
         record: ConsumerRecord<String, Event>
     ) {
         LOG.info("Received event with key: $key at offset: ${record.offset()} in partition: ${record.partition()}")
-
-        val excludeKeys: Set<String> =
-            excludeFilters?.split(",")?.asSequence()?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
-                ?: emptySet()
-
+        val excludeKeys = ExcludeFiltersParser.parse(excludeFilters)
         LOG.info("Exclude filters for this event: $excludeKeys")
 
         try {
@@ -48,8 +44,7 @@ class KafkaService(
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()
             LOG.error(
-                "Failed processing kafka event key=$key offset=${record.offset()} partition=${record.partition()}",
-                ex
+                "Failed processing kafka event key=$key offset=${record.offset()} partition=${record.partition()}", ex
             )
             throw ex
         }
@@ -58,4 +53,9 @@ class KafkaService(
     private companion object {
         private val LOG = LoggerFactory.getLogger(KafkaService::class.java)
     }
+}
+
+internal object ExcludeFiltersParser {
+    fun parse(headerValue: String?): Set<String> =
+        headerValue?.split(',')?.asSequence()?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
 }

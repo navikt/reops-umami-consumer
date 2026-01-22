@@ -13,11 +13,11 @@ internal class KeyPolicy(
         data object None : Decision()
     }
 
-    fun decide(key: String, value: Any?): Decision {
-        if (key in droppedKeys) return Decision.Drop
-        if (key in preservedKeys) return Decision.Preserve(value)
-        forcedValues[key]?.let { return Decision.Replace(it) }
-        if (key in advertisingIdKeys) return Decision.Replace("[PROXY]")
-        return Decision.None
+    fun decide(key: String, value: Any?): Decision = when {
+        key in droppedKeys -> Decision.Drop
+        key in preservedKeys -> Decision.Preserve(value)
+        forcedValues.containsKey(key) -> Decision.Replace(forcedValues.getValue(key))
+        key in advertisingIdKeys -> Decision.Replace("[PROXY]")
+        else -> Decision.None
     }
 }

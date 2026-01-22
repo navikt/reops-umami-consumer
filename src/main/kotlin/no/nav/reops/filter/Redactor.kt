@@ -4,29 +4,21 @@ internal class Redactor(
     private val rules: List<RedactionRule>
 ) {
     fun redact(
-        input: String,
-        excludedLabels: Set<String> = emptySet(),
-        preserveUrls: Boolean = true
+        input: String, excludedLabels: Set<String> = emptySet(), preserveUrls: Boolean = true
     ): String {
         var result = input
 
         // 1) Preserve UUIDs
-        val preservedUuids = mutableListOf<String>()
-        FilterPatterns.UUID_REGEX.findAll(result).forEachIndexed { i, match ->
-            preservedUuids.add(match.value)
-            result = result.replace(match.value, "__PRESERVED_UUID_${i}__")
-        }
+        val preservedUuids = PlaceholderStore(prefix = "__PRESERVED_UUID_", suffix = "__")
+        result = preservedUuids.preserveAll(result, FilterPatterns.UUID_REGEX)
 
         // 2) Optionally preserve URL-like substrings in free-text
-        val preservedUrls = mutableListOf<String>()
+        val preservedUrls = PlaceholderStore(prefix = "__PRESERVED_URL_", suffix = "__")
         if (preserveUrls) {
-            FilterPatterns.URL_REGEX.findAll(result).forEachIndexed { i, match ->
-                preservedUrls.add(match.value)
-                result = result.replace(match.value, "__PRESERVED_URL_${i}__")
-            }
+            result = preservedUrls.preserveAll(result, FilterPatterns.URL_REGEX)
         }
 
-        // 3) Apply rules
+        // 3) Apply rules (same order, same checks)
         for (rule in rules) {
             if (rule.label in excludedLabels) continue
             if (!rule.regex.containsMatchIn(result)) continue
@@ -39,15 +31,36 @@ internal class Redactor(
         }
 
         // 4) Restore URLs
-        preservedUrls.forEachIndexed { i, url ->
-            result = result.replace("__PRESERVED_URL_${i}__", url)
-        }
+        result = preservedUrls.restoreAll(result)
 
         // 5) Restore UUIDs
-        preservedUuids.forEachIndexed { i, uuid ->
-            result = result.replace("__PRESERVED_UUID_${i}__", uuid)
-        }
+        result = preservedUuids.restoreAll(result)
 
         return result
+    }
+
+    private class PlaceholderStore(
+        private val prefix: String, private val suffix: String
+    ) {
+        private val values = mutableListOf<String>()
+
+        fun preserveAll(input: String, regex: Regex): String {
+            var out = input
+            regex.findAll(out).forEachIndexed { i, match ->
+                values.add(match.value)
+                out = out.replace(match.value, placeholder(i))
+            }
+            return out
+        }
+
+        fun restoreAll(input: String): String {
+            var out = input
+            values.forEachIndexed { i, original ->
+                out = out.replace(placeholder(i), original)
+            }
+            return out
+        }
+
+        private fun placeholder(i: Int): String = "$prefix${i}$suffix"
     }
 }

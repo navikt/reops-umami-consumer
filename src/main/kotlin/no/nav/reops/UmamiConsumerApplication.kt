@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class UmamiConsumerApplication
 
 fun main(args: Array<String>) {
-	runApplication<UmamiConsumerApplication>(*args)
+    runApplication<UmamiConsumerApplication>(*args)
 }

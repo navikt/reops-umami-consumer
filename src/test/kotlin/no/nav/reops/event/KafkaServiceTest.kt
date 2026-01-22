@@ -39,11 +39,7 @@ class KafkaServiceTest {
 
         val record = consumerRecord(key = key, value = event)
         kafkaService.eventListen(
-            event = event,
-            key = key,
-            userAgent = userAgent,
-            excludeFilters = excludeFilters,
-            record = record
+            event = event, key = key, userAgent = userAgent, excludeFilters = excludeFilters, record = record
         )
 
         verify(filterService).filterEvent(eq(event), eq(setOf("a", "b", "c")))

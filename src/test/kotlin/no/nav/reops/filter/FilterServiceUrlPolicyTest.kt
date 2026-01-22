@@ -25,8 +25,7 @@ class FilterServiceUrlPolicyTest {
 
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
+            type = "event", payload = base.payload.copy(
                 data = TestEventFactory.jsonNode(
                     mapOf(
                         "payload" to mapOf(
@@ -49,8 +48,7 @@ class FilterServiceUrlPolicyTest {
 
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
+            type = "event", payload = base.payload.copy(
                 url = "/home/user/documents/file.txt",
                 referrer = "/var/www/html/site",
                 data = TestEventFactory.jsonNode(
@@ -84,14 +82,11 @@ class FilterServiceUrlPolicyTest {
 
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
-                url = "/home/user/documents/file.txt",
-                data = TestEventFactory.jsonNode(
+            type = "event", payload = base.payload.copy(
+                url = "/home/user/documents/file.txt", data = TestEventFactory.jsonNode(
                     mapOf(
                         "data" to mapOf(
-                            "url" to "/var/www/html/index.php",
-                            "config" to mapOf(
+                            "url" to "/var/www/html/index.php", "config" to mapOf(
                                 "url" to "C:\\Users\\Admin\\file.exe"
                             )
                         )
@@ -116,8 +111,7 @@ class FilterServiceUrlPolicyTest {
         val service = filterService()
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(url = "/some/path/page?file=/home/user/secret.txt")
+            type = "event", payload = base.payload.copy(url = "/some/path/page?file=/home/user/secret.txt")
         )
 
         val out = service.filterEvent(event)
@@ -129,8 +123,7 @@ class FilterServiceUrlPolicyTest {
         val service = filterService()
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(url = "/search?email=user@example.com&phone=98765432")
+            type = "event", payload = base.payload.copy(url = "/search?email=user@example.com&phone=98765432")
         )
 
         val out = service.filterEvent(event)
@@ -155,8 +148,7 @@ class FilterServiceUrlPolicyTest {
         val service = filterService()
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(url = "/home/user/documents/file.txt")
+            type = "event", payload = base.payload.copy(url = "/home/user/documents/file.txt")
         )
 
         val out = service.filterEvent(event)
@@ -168,8 +160,7 @@ class FilterServiceUrlPolicyTest {
         val service = filterService()
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(url = "/C:/Users/Admin/page")
+            type = "event", payload = base.payload.copy(url = "/C:/Users/Admin/page")
         )
 
         val out = service.filterEvent(event)
@@ -181,8 +172,7 @@ class FilterServiceUrlPolicyTest {
         val service = filterService()
         val base = TestEventFactory.minimalEvent()
         val event = base.copy(
-            type = "event",
-            payload = base.payload.copy(
+            type = "event", payload = base.payload.copy(
                 referrer = "https://example.com/path/to/person/johndoe@example.com/mail/view",
                 url = "https://example.com/path/to/person/johndoe@example.com/mail/view"
             )
