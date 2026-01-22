@@ -6,10 +6,6 @@ updates:
       interval: "daily"
     open-pull-requests-limit: 5
     rebase-strategy: "auto"
-    labels:
-      - "dependencies"
-      - "kotlin"
-      - "gradle"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
