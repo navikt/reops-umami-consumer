@@ -4,8 +4,8 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import no.nav.reops.event.EXCLUDE_FILTERS
 import no.nav.reops.event.Event
+import no.nav.reops.event.FORWARDED_FOR
 import no.nav.reops.event.USER_AGENT
-import no.nav.reops.event.X_CLIENT_REGION
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -62,6 +62,7 @@ class EndeTilEndeTest {
             .setHeader(KafkaHeaders.KEY, "event-key")
             .setHeader(USER_AGENT, "test-agent")
             .setHeader(EXCLUDE_FILTERS, "")
+            .setHeader(FORWARDED_FOR, "127.0.0.1")
             .build()
 
         kafkaTemplate.send(message)
@@ -107,6 +108,7 @@ class EndeTilEndeTest {
             .setHeader(KafkaHeaders.KEY, "event-key")
             .setHeader(USER_AGENT, "test-agent")
             .setHeader(EXCLUDE_FILTERS, "")
+            .setHeader(FORWARDED_FOR, "127.0.0.1")
             .build()
 
         kafkaTemplate.send(message)

@@ -30,7 +30,8 @@ class UmamiServiceTest {
         val registry = SimpleMeterRegistry()
         val webClient = webClient(status = status, body = "test-body", contentType = MediaType.TEXT_PLAIN_VALUE)
         val service = UmamiService(webClient, registry)
-
+        val forwardedFor = "127.0.0.1"
+        val userAgent = "Mozilla/5.0"
         val event = Event(
             type = "visit", payload = Event.Payload(
                 website = UUID.randomUUID(),
@@ -43,9 +44,7 @@ class UmamiServiceTest {
             )
         )
 
-        service.sendEvent(
-            event = event, userAgent = "JUnit", clientRegion = "NO", clientCity = "Oslo"
-        )
+        service.sendEvent(event = event, userAgent = userAgent, forwardedFor = forwardedFor)
 
         assertEquals(expectedSuccess, successCounter(registry))
         assertEquals(expectedFailure, failureCounter(registry))

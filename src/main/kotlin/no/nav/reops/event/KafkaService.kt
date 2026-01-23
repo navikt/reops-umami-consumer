@@ -13,8 +13,7 @@ import org.springframework.stereotype.Service
 
 const val USER_AGENT = "user-agent"
 const val EXCLUDE_FILTERS = "x-exclude-filters"
-const val X_CLIENT_REGION = "x-client-region"
-const val X_CLIENT_CITY = "x-client-city"
+const val FORWARDED_FOR = "x-forwarded-for"
 
 @Service
 class KafkaService(
@@ -36,8 +35,7 @@ class KafkaService(
         @Header(KafkaHeaders.RECEIVED_KEY) key: String,
         @Header(name = USER_AGENT, required = false) userAgent: String?,
         @Header(name = EXCLUDE_FILTERS, required = false) excludeFilters: String?,
-        @Header(name = X_CLIENT_REGION, required = false) clientRegion: String?,
-        @Header(name = X_CLIENT_CITY, required = false) clientCity: String?,
+        @Header(name = FORWARDED_FOR, required = false) forwardedFor: String?,
         record: ConsumerRecord<String, Event>
     ) {
         LOG.info("Received event with key={} offset={} partition={}", key, record.offset(), record.partition())
@@ -47,10 +45,9 @@ class KafkaService(
         try {
             val filteredEvent = filterService.filterEvent(event, excludeKeys)
             val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"
-            val safeClientRegion = clientRegion?.trim().takeUnless { it.isNullOrEmpty() }
-            val safeClientCity = clientCity?.trim().takeUnless { it.isNullOrEmpty() }
+            val safeForwardedFor = forwardedFor?.trim().takeUnless { it.isNullOrEmpty() }
 
-            umamiService.sendEvent(filteredEvent, safeUserAgent, safeClientRegion, safeClientCity)
+            umamiService.sendEvent(filteredEvent, safeUserAgent, safeForwardedFor)
             kafkaEventsSuccess.increment()
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()

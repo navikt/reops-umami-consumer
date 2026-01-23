@@ -34,8 +34,7 @@ class KafkaServiceTest {
         val key = "key"
         val userAgent = "Mozilla/5.0 (Linux; Android 10; K)"
         val excludeFilters = "a, b,,  c  "
-        val clientRegion = "NO"
-        val clientCity = "Oslo"
+        val forwardedFor = "127.0.0.1"
 
         whenever(filterService.filterEvent(eq(event), eq(setOf("a", "b", "c")))).thenReturn(filteredEvent)
 
@@ -46,13 +45,12 @@ class KafkaServiceTest {
             key = key,
             userAgent = userAgent,
             excludeFilters = excludeFilters,
-            clientRegion = clientRegion,
-            clientCity = clientCity,
+            forwardedFor = forwardedFor,
             record = record
         )
 
         verify(filterService).filterEvent(eq(event), eq(setOf("a", "b", "c")))
-        verify(umamiService).sendEvent(eq(filteredEvent), eq(userAgent), eq(clientRegion), eq(clientCity))
+        verify(umamiService).sendEvent(eq(filteredEvent), eq(userAgent), eq(forwardedFor))
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
         val failure = meterRegistry.find("kafka_events_processed_total").tag("result", "failure").counter()
@@ -67,8 +65,7 @@ class KafkaServiceTest {
         val filteredEvent = mock<Event>()
         val key = "key"
         val userAgent = "Mozilla/5.0 (Linux; Android 10; K)"
-        val clientRegion = "NO"
-        val clientCity = "Oslo"
+        val forwardedFor = "127.0.0.1"
 
         whenever(filterService.filterEvent(eq(event), eq(emptySet()))).thenReturn(filteredEvent)
 
@@ -79,13 +76,12 @@ class KafkaServiceTest {
             key = key,
             userAgent = userAgent,
             excludeFilters = null,
-            clientRegion = clientRegion,
-            clientCity = clientCity,
+            forwardedFor = forwardedFor,
             record = record
         )
 
         verify(filterService).filterEvent(eq(event), eq(emptySet()))
-        verify(umamiService).sendEvent(eq(filteredEvent), eq(userAgent), eq(clientRegion), eq(clientCity))
+        verify(umamiService).sendEvent(eq(filteredEvent), eq(userAgent), eq(forwardedFor))
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
         val failure = meterRegistry.find("kafka_events_processed_total").tag("result", "failure").counter()
@@ -99,8 +95,7 @@ class KafkaServiceTest {
         val event = mock<Event>()
         val key = "key"
         val userAgent = "Mozilla/5.0 (Linux; Android 10; K)"
-        val clientRegion = "NO"
-        val clientCity = "Oslo"
+        val forwardedFor = "127.0.0.1"
 
         whenever(filterService.filterEvent(eq(event), any())).thenThrow(RuntimeException("boom"))
 
@@ -112,14 +107,13 @@ class KafkaServiceTest {
                 key = key,
                 userAgent = userAgent,
                 excludeFilters = "",
-                clientRegion = clientRegion,
-                clientCity = clientCity,
+                forwardedFor = forwardedFor,
                 record = record
             )
         }.isInstanceOf(RuntimeException::class.java)
 
         verify(filterService).filterEvent(eq(event), eq(emptySet()))
-        verify(umamiService, never()).sendEvent(any(), any(), any(), any())
+        verify(umamiService, never()).sendEvent(any(), any(), any())
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
         val failure = meterRegistry.find("kafka_events_processed_total").tag("result", "failure").counter()
