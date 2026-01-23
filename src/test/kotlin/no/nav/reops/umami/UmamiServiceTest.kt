@@ -42,7 +42,7 @@ class UmamiServiceTest {
             )
         )
 
-        service.sendEvent(event, userAgent = "JUnit")
+        service.sendEvent(event, userAgent = "JUnit", "NO")
         assertEquals(expectedSuccess, successCounter(registry))
         assertEquals(expectedFailure, failureCounter(registry))
     }
