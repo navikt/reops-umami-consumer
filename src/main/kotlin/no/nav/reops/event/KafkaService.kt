@@ -44,10 +44,12 @@ class KafkaService(
 
         try {
             val filteredEvent = filterService.filterEvent(event, excludeKeys)
+
             val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"
             val safeForwardedFor = forwardedFor?.trim().takeUnless { it.isNullOrEmpty() }
+            val normalized = filteredEvent.normalizedForUmami()
 
-            umamiService.sendEvent(filteredEvent, safeUserAgent, safeForwardedFor)
+            umamiService.sendEvent(normalized, safeUserAgent, safeForwardedFor)
             kafkaEventsSuccess.increment()
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()
@@ -65,6 +67,14 @@ class KafkaService(
     private companion object {
         private val LOG = LoggerFactory.getLogger(KafkaService::class.java)
     }
+}
+
+private fun Event.normalizedForUmami(): Event {
+    val normalizedName = this.payload.name?.trim().takeUnless { it.isNullOrEmpty() }
+    return this.copy(
+        type = "event",
+        payload = this.payload.copy(name = normalizedName)
+    )
 }
 
 internal object ExcludeFiltersParser {

@@ -26,6 +26,7 @@ class FilterService(meterRegistry: MeterRegistry) {
             title = p.title.redactedUnlessExcluded("title", excludeFilters),
             url = p.url.redactedUnlessExcluded("url", excludeFilters),
             referrer = p.referrer.redactedUnlessExcluded("referrer", excludeFilters),
+            name = p.name.redactedUnlessExcluded("name", excludeFilters),
             data = if ("data" in excludeFilters) p.data else p.data?.let { traverser.transform(it) })
 
         return event.copy(payload = sanitized)
