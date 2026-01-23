@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono
 import java.time.Duration
 
 const val X_VERCEL_IP_COUNTRY = "X-Vercel-IP-Country"
+const val X_VERCEL_IP_CITY = "X-Vercel-IP-City"
 
 @Service
 class UmamiService(
@@ -25,25 +26,29 @@ class UmamiService(
     private val umamiRequestsFailure: Counter =
         Counter.builder("umami_requests_total").tag("result", "failure").register(meterRegistry)
 
-    fun sendEvent(event: Event, userAgent: String, clientRegion: String) {
+    fun sendEvent(event: Event, userAgent: String, clientRegion: String?, clientCity: String?) {
         try {
-            umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON)
-                .header(USER_AGENT, userAgent)
-                .header(X_VERCEL_IP_COUNTRY, clientRegion)
-                .bodyValue(event).retrieve()
-                .onStatus(HttpStatusCode::isError) { resp ->
+            val country = clientRegion?.trim()?.uppercase()?.takeIf { ISO2_COUNTRY_REGEX.matches(it) }
+            val city = clientCity?.trim()?.takeIf { it.isNotEmpty() }
+            val req = umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON)
+                .header(USER_AGENT, userAgent).apply {
+                    if (country != null) header(X_VERCEL_IP_COUNTRY, country)
+                    if (city != null) header(X_VERCEL_IP_CITY, city)
+                }.bodyValue(event).retrieve().onStatus(HttpStatusCode::isError) { resp ->
                     resp.bodyToMono<String>().defaultIfEmpty("").flatMap { body ->
-                        LOG.error("Umami responded with status=${resp.statusCode().value()} body=$body")
+                        LOG.error("Umami responded with status={} body={}", resp.statusCode().value(), body)
                         Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
                     }
                 }.bodyToMono<String>().defaultIfEmpty("").doOnNext { body ->
-                    LOG.info("Umami response body=$body")
+                    LOG.info("Umami response body={}", body)
                     umamiRequestsSuccess.increment()
                 }.onErrorResume { ex ->
                     umamiRequestsFailure.increment()
                     LOG.error("Failed to send event to Umami", ex)
                     Mono.empty()
-                }.block(Duration.ofSeconds(5))
+                }
+
+            req.block(Duration.ofSeconds(5))
         } catch (ex: Exception) {
             umamiRequestsFailure.increment()
             LOG.error("Failed to send event to Umami", ex)
@@ -52,5 +57,6 @@ class UmamiService(
 
     private companion object {
         private val LOG = LoggerFactory.getLogger(UmamiService::class.java)
+        private val ISO2_COUNTRY_REGEX = Regex("^[A-Z]{2}$")
     }
 }

@@ -11,9 +11,10 @@ import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 
-const val USER_AGENT = "User-Agent"
-const val EXCLUDE_FILTERS = "X-Exclude-Filters"
-const val X_CLIENT_REGION = "X-Client-Region"
+const val USER_AGENT = "user-agent"
+const val EXCLUDE_FILTERS = "x-exclude-filters"
+const val X_CLIENT_REGION = "x-client-region"
+const val X_CLIENT_CITY = "x-client-city"
 
 @Service
 class KafkaService(
@@ -36,23 +37,29 @@ class KafkaService(
         @Header(name = USER_AGENT, required = false) userAgent: String?,
         @Header(name = EXCLUDE_FILTERS, required = false) excludeFilters: String?,
         @Header(name = X_CLIENT_REGION, required = false) clientRegion: String?,
+        @Header(name = X_CLIENT_CITY, required = false) clientCity: String?,
         record: ConsumerRecord<String, Event>
     ) {
-        LOG.info("Received event with key: $key at offset: ${record.offset()} in partition: ${record.partition()}")
+        LOG.info("Received event with key={} offset={} partition={}", key, record.offset(), record.partition())
         val excludeKeys = ExcludeFiltersParser.parse(excludeFilters)
-        LOG.info("Exclude filters for this event: $excludeKeys")
+        LOG.info("Exclude filters for this event: {}", excludeKeys)
 
         try {
             val filteredEvent = filterService.filterEvent(event, excludeKeys)
-            val safeUserAgent = userAgent?.takeIf { it.isNotBlank() } ?: "unknown"
-            val safeClientRegion = clientRegion?.takeIf { it.isNotBlank() } ?: "unknown"
+            val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"
+            val safeClientRegion = clientRegion?.trim().takeUnless { it.isNullOrEmpty() }
+            val safeClientCity = clientCity?.trim().takeUnless { it.isNullOrEmpty() }
 
-            umamiService.sendEvent(filteredEvent, safeUserAgent, safeClientRegion)
+            umamiService.sendEvent(filteredEvent, safeUserAgent, safeClientRegion, safeClientCity)
             kafkaEventsSuccess.increment()
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()
             LOG.error(
-                "Failed processing kafka event key=$key offset=${record.offset()} partition=${record.partition()}", ex
+                "Failed processing kafka event key={} offset={} partition={}",
+                key,
+                record.offset(),
+                record.partition(),
+                ex
             )
             throw ex
         }
