@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono
 import java.time.Duration
 
 const val X_VERCEL_IP_COUNTRY = "X-Vercel-IP-Country"
-const val X_VERCEL_IP_CITY = "X-Vercel-IP-City"
+const val X_VERCEL_CITY = "X-Vercel-City"
 
 @Service
 class UmamiService(
@@ -33,7 +33,7 @@ class UmamiService(
             val req = umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON)
                 .header(USER_AGENT, userAgent).apply {
                     if (country != null) header(X_VERCEL_IP_COUNTRY, country)
-                    if (city != null) header(X_VERCEL_IP_CITY, city)
+                    if (city != null) header(X_VERCEL_CITY, city)
                 }.bodyValue(event).retrieve().onStatus(HttpStatusCode::isError) { resp ->
                     resp.bodyToMono<String>().defaultIfEmpty("").flatMap { body ->
                         LOG.error("Umami responded with status={} body={}", resp.statusCode().value(), body)
