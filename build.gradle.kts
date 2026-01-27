@@ -35,7 +35,7 @@ dependencies {
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.kafka:spring-kafka-test")
-	testImplementation("org.mockito.kotlin:mockito-kotlin:6.2.2")
+	testImplementation("org.mockito.kotlin:mockito-kotlin:6.2.3")
 	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.0.9")
 }
 
