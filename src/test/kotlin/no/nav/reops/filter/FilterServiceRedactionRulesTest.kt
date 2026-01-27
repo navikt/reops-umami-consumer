@@ -2,6 +2,7 @@ package no.nav.reops.filter
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -242,5 +243,112 @@ class FilterServiceRedactionRulesTest {
         )
 
         assertEquals(expected, out)
+    }
+
+    @Test
+    fun `filterEvent removes ip_address field from payload data`() {
+        val service = filterService()
+        val base = TestEventFactory.minimalEvent()
+        val event = base.copy(
+            type = "event", payload = base.payload.copy(
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "ip_address" to "192.168.1.1", "ip" to "10.0.0.1"
+                    )
+                )
+            )
+        )
+
+        val out = service.filterEvent(event)
+        assertFalse(out.payload.data!!.has("ip_address"))
+    }
+
+    @Test
+    fun `filterEvent should exclude name redaction for selected keys`() {
+        val service = filterService()
+
+        val base = TestEventFactory.minimalEvent()
+        val event = base.copy(
+            type = "event",
+            payload = base.payload.copy(
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "sidetittel" to "Ola Nordmann",
+                        "komponent" to "Ola Nordmann", // exclude
+                        "title" to "Ola Nordmann",
+                        "text" to "Ola Nordmann",
+                        "tekst" to "Ola Nordmann",
+                        "lenketekst" to "Ola Nordmann", // exclude
+                        "parametre" to mapOf(
+                            "breadcrumbs" to "Ola Nordmann", // exclude
+                            "pageType" to "Ola Nordmann", // exclude
+                            "pageTheme" to "Ola Nordmann" // exclude
+                        ),
+                        "employer" to "Ola Nordmann", // exclude
+                        "seksjon" to "Ola Nordmann", // exclude
+                        "tittel" to "Ola Nordmann",
+                        "valg" to "Ola Nordmann", // exclude
+                        "jobTitle" to "Ola Nordmann", // exclude
+                        "searchParams" to mapOf(
+                            "q" to "Ola Nordmann",
+                            "occupationLevel2" to "Ola Nordmann" // exclude
+                        ),
+                        "enhet" to "Ola Nordmann", // exclude
+                        "filter" to "Ola Nordmann", // exclude
+                        "organisasjoner" to "Ola Nordmann", // exclude
+                        "destinasjon" to "Ola Nordmann", // exclude
+                        "location" to "Ola Nordmann", // exclude
+                        "arbeidssted" to "Ola Nordmann", // exclude
+                        "kilde" to "Ola Nordmann", // exclude
+                        "skjemanavn" to "Ola Nordmann", // exclude
+                        "lenkegruppe" to "Ola Nordmann", // exclude
+                        "linkText" to "Ola Nordmann", // exclude
+                        "descriptionId" to "Ola Nordmann", // exclude
+                        "tema" to "Ola Nordmann", // exclude
+                        "innholdstype" to "Ola Nordmann", // exclude
+                        "yrkestittel" to "Ola Nordmann", // exclude
+                        "tlbhrNavn" to "Ola Nordmann" // exclude
+                    )
+                )
+            )
+        )
+
+        val out = service.filterEvent(event)
+        val data = out.payload.data!!
+
+        // Redacted (not excluded)
+        assertEquals("[PROXY-NAME]", data.get("sidetittel").asString())
+        assertEquals("[PROXY-NAME]", data.get("title").asString())
+        assertEquals("[PROXY-NAME]", data.get("text").asString())
+        assertEquals("[PROXY-NAME]", data.get("tekst").asString())
+        assertEquals("[PROXY-NAME]", data.get("tittel").asString())
+        assertEquals("[PROXY-NAME]", data.get("searchParams").get("q").asString())
+
+        // Preserved (excluded)
+        assertEquals("Ola Nordmann", data.get("komponent").asString())
+        assertEquals("Ola Nordmann", data.get("lenketekst").asString())
+        assertEquals("Ola Nordmann", data.get("parametre").get("breadcrumbs").asString())
+        assertEquals("Ola Nordmann", data.get("parametre").get("pageType").asString())
+        assertEquals("Ola Nordmann", data.get("parametre").get("pageTheme").asString())
+        assertEquals("Ola Nordmann", data.get("employer").asString())
+        assertEquals("Ola Nordmann", data.get("seksjon").asString())
+        assertEquals("Ola Nordmann", data.get("valg").asString())
+        assertEquals("Ola Nordmann", data.get("jobTitle").asString())
+        assertEquals("Ola Nordmann", data.get("searchParams").get("occupationLevel2").asString())
+        assertEquals("Ola Nordmann", data.get("enhet").asString())
+        assertEquals("Ola Nordmann", data.get("filter").asString())
+        assertEquals("Ola Nordmann", data.get("organisasjoner").asString())
+        assertEquals("Ola Nordmann", data.get("destinasjon").asString())
+        assertEquals("Ola Nordmann", data.get("location").asString())
+        assertEquals("Ola Nordmann", data.get("arbeidssted").asString())
+        assertEquals("Ola Nordmann", data.get("kilde").asString())
+        assertEquals("Ola Nordmann", data.get("skjemanavn").asString())
+        assertEquals("Ola Nordmann", data.get("lenkegruppe").asString())
+        assertEquals("Ola Nordmann", data.get("linkText").asString())
+        assertEquals("Ola Nordmann", data.get("descriptionId").asString())
+        assertEquals("Ola Nordmann", data.get("tema").asString())
+        assertEquals("Ola Nordmann", data.get("innholdstype").asString())
+        assertEquals("Ola Nordmann", data.get("yrkestittel").asString())
+        assertEquals("Ola Nordmann", data.get("tlbhrNavn").asString())
     }
 }

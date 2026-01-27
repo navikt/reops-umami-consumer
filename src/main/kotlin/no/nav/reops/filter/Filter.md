@@ -89,14 +89,14 @@ The filter distinguishes between:
 - **Strict URL fields** (known URL semantics): handled as URLs.
 - **URL-like keys** (navigation/link fields): handled as URLs when the value is a string.
 
-| Location / Key (string values)                                                                                                                                                | URL handling                                                        |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| `payload.url`                                                                                                                                                                | Treated as URL                                                      |
-| `payload.referrer`                                                                                                                                                           | Treated as URL                                                      |
-| `payload.data.payload.url`                                                                                                                                                   | Treated as URL *(nested inside `payload.data`)*                     |
-| `payload.data.payload.referrer`                                                                                                                                              | Treated as URL *(nested inside `payload.data`)*                     |
-| URL-like keys anywhere in `payload.data`, such as `url`, `href`, `path`, `pathname`, `link`, `destination`, `lenkesti`, `newLocation`, `prevLocation`, etc.                 | Treated as URL (path vs query handling; filepath exclusion on path) |
-| Any other field                                                                                                                                                              | Treated as a normal string                                          |
+| Location / Key (string values)                                                                                                                              | URL handling                                                        |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| `payload.url`                                                                                                                                               | Treated as URL                                                      |
+| `payload.referrer`                                                                                                                                          | Treated as URL                                                      |
+| `payload.data.payload.url`                                                                                                                                  | Treated as URL *(nested inside `payload.data`)*                     |
+| `payload.data.payload.referrer`                                                                                                                             | Treated as URL *(nested inside `payload.data`)*                     |
+| URL-like keys anywhere in `payload.data`, such as `url`, `href`, `path`, `pathname`, `link`, `destination`, `lenkesti`, `newLocation`, `prevLocation`, etc. | Treated as URL (path vs query handling; filepath exclusion on path) |
+| Any other field                                                                                                                                             | Treated as a normal string                                          |
 
 For URL handling:
 
@@ -145,11 +145,11 @@ These rules apply to all string values unless explicitly excluded (e.g. URL path
 Some values are temporarily replaced with placeholders to avoid accidental redaction,
 then restored unchanged after rule application.
 
-| Pattern                              | Reason                                                                                                     |
-|--------------------------------------|------------------------------------------------------------------------------------------------------------|
-| UUIDs                                | Prevent partial regex matches                                                                              |
-| URL-like substrings (free-text only) | Avoid redacting legitimate routing/link text inside normal strings (not `payload.url`/`referrer`)         |
-| `nav123456`, `test654321`            | Explicitly allowed identifiers (matched by a "keep" rule and not replaced)                                |
+| Pattern                              | Reason                                                                                            |
+|--------------------------------------|---------------------------------------------------------------------------------------------------|
+| UUIDs                                | Prevent partial regex matches                                                                     |
+| URL-like substrings (free-text only) | Avoid redacting legitimate routing/link text inside normal strings (not `payload.url`/`referrer`) |
+| `nav123456`, `test654321`            | Explicitly allowed identifiers (matched by a "keep" rule and not replaced)                        |
 
 Notes:
 - URL-like preservation is **not** used for strict URL fields; URLs are redacted via `UrlPolicy` split (path vs query).

@@ -38,7 +38,7 @@ class KafkaServiceTest {
         val excludeFilters = "a, b,,  c  "
         val forwardedFor = "127.0.0.1"
 
-        whenever(filterService.filterEvent(eq(event), eq(setOf("a", "b", "c")))).thenReturn(filteredEvent)
+        whenever(filterService.filterEvent(eq(event), eq(excludeFilters))).thenReturn(filteredEvent)
 
         val record = consumerRecord(key = key, value = event)
 
@@ -51,17 +51,14 @@ class KafkaServiceTest {
             record = record
         )
 
-        verify(filterService).filterEvent(eq(event), eq(setOf("a", "b", "c")))
+        verify(filterService).filterEvent(eq(event), eq(excludeFilters))
 
-        // Because KafkaService normalizes (copy), don't assert instance equality.
         verify(umamiService).sendEvent(
             check { sent ->
                 assertThat(sent.type).isEqualTo("event")
                 assertThat(sent.payload.website).isEqualTo(filteredEvent.payload.website)
                 assertThat(sent.payload.name).isEqualTo("besøk")
-            },
-            eq(userAgent),
-            eq(forwardedFor)
+            }, eq(userAgent), eq(forwardedFor)
         )
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
@@ -80,7 +77,7 @@ class KafkaServiceTest {
         val userAgent = "Mozilla/5.0 (Linux; Android 10; K)"
         val forwardedFor = "127.0.0.1"
 
-        whenever(filterService.filterEvent(eq(event), eq(emptySet()))).thenReturn(filteredEvent)
+        whenever(filterService.filterEvent(eq(event), eq(null))).thenReturn(filteredEvent)
 
         val record = consumerRecord(key = key, value = event)
 
@@ -93,16 +90,14 @@ class KafkaServiceTest {
             record = record
         )
 
-        verify(filterService).filterEvent(eq(event), eq(emptySet()))
+        verify(filterService).filterEvent(eq(event), eq(null))
 
         verify(umamiService).sendEvent(
             check { sent ->
                 assertThat(sent.type).isEqualTo("event")
                 assertThat(sent.payload.website).isEqualTo(filteredEvent.payload.website)
                 assertThat(sent.payload.name).isNull()
-            },
-            eq(userAgent),
-            eq(forwardedFor)
+            }, eq(userAgent), eq(forwardedFor)
         )
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
@@ -135,7 +130,7 @@ class KafkaServiceTest {
             )
         }.isInstanceOf(RuntimeException::class.java)
 
-        verify(filterService).filterEvent(eq(event), eq(emptySet()))
+        verify(filterService).filterEvent(eq(event), eq(""))
         verify(umamiService, never()).sendEvent(any(), any(), any())
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
@@ -149,18 +144,16 @@ class KafkaServiceTest {
         "topic", 0, 0L, 0L, TimestampType.CREATE_TIME, 0, 0, key, value, RecordHeaders(), Optional.empty()
     )
 
-    private fun sampleEvent(name: String?): Event =
-        Event(
-            type = "event",
-            payload = Event.Payload(
-                website = UUID.fromString("1dbfe4e9-bf8b-45d9-9305-928f22200bc0"),
-                hostname = "felgen.intern.nav.no",
-                screen = "172x111",
-                language = "en-US",
-                title = "Nav Webapps | Snarveier",
-                url = "/path/to/thing",
-                referrer = "",
-                name = name
-            )
+    private fun sampleEvent(name: String?): Event = Event(
+        type = "event", payload = Event.Payload(
+            website = UUID.fromString("1dbfe4e9-bf8b-45d9-9305-928f22200bc0"),
+            hostname = "felgen.intern.nav.no",
+            screen = "172x111",
+            language = "en-US",
+            title = "Nav Webapps | Snarveier",
+            url = "/path/to/thing",
+            referrer = "",
+            name = name
         )
+    )
 }

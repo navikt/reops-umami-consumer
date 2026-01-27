@@ -38,12 +38,9 @@ class KafkaService(
         @Header(name = FORWARDED_FOR, required = false) forwardedFor: String?,
         record: ConsumerRecord<String, Event>
     ) {
-        LOG.info("Received event with key={} offset={} partition={}", key, record.offset(), record.partition())
-        val excludeKeys = ExcludeFiltersParser.parse(excludeFilters)
-        LOG.info("Exclude filters for this event: {}", excludeKeys)
-
         try {
-            val filteredEvent = filterService.filterEvent(event, excludeKeys)
+            LOG.info("Received event with key={} offset={} partition={}", key, record.offset(), record.partition())
+            val filteredEvent = filterService.filterEvent(event, excludeFilters)
 
             val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"
             val safeForwardedFor = forwardedFor?.trim().takeUnless { it.isNullOrEmpty() }
@@ -72,12 +69,6 @@ class KafkaService(
 private fun Event.normalizedForUmami(): Event {
     val normalizedName = this.payload.name?.trim().takeUnless { it.isNullOrEmpty() }
     return this.copy(
-        type = "event",
-        payload = this.payload.copy(name = normalizedName)
+        type = "event", payload = this.payload.copy(name = normalizedName)
     )
-}
-
-internal object ExcludeFiltersParser {
-    fun parse(headerValue: String?): Set<String> =
-        headerValue?.split(',')?.asSequence()?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
 }

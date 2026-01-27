@@ -9,7 +9,7 @@ internal class Traverser(
     private val keyPolicy: KeyPolicy,
     private val urlPolicy: UrlPolicy,
     private val redactor: Redactor,
-    private val excludeFilters: Set<String>
+    private val excludeKeys: Set<String>
 ) {
     fun transform(root: JsonNode): JsonNode =
         transformNode(root, NodeContext(depth = 0, containerKey = null, key = null))
@@ -37,7 +37,7 @@ internal class Traverser(
         val out = JsonNodeFactory.instance.objectNode()
 
         for ((key, value) in obj.properties()) {
-            if (key in excludeFilters) {
+            if (key in excludeKeys) {
                 out.set(key, value)
                 continue
             }

@@ -26,7 +26,7 @@ class FilterServiceExcludeFiltersTest {
             )
         )
 
-        val out = service.filterEvent(event, excludeFilters = setOf("user_email", "event_properties"))
+        val out = service.filterEvent(event, excludeFilters = "user_email,event_properties")
         assertEquals("user@example.com", out.payload.data!!.get("user_email").asString())
 
         val props = out.payload.data.get("event_properties")
@@ -43,10 +43,10 @@ class FilterServiceExcludeFiltersTest {
             type = "event", payload = base.payload.copy(url = "/search?email=user@example.com&phone=98765432")
         )
 
-        val out = service.filterEvent(event, excludeFilters = setOf("url"))
+        val out = service.filterEvent(event, excludeFilters = "url")
 
         assertEquals("/search?email=user@example.com&phone=98765432", out.payload.url)
         assertTrue(out.payload.url!!.contains("user@example.com"))
-        assertTrue(out.payload.url!!.contains("98765432"))
+        assertTrue(out.payload.url.contains("98765432"))
     }
 }

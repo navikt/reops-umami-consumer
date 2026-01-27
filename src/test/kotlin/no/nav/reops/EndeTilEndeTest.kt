@@ -41,8 +41,8 @@ class EndeTilEndeTest {
         umamiMock.stubFor(
             post(urlEqualTo("/api/send")).willReturn(
                 aResponse().withStatus(200).withBody(
-                        "{\"cache\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3ZWJzaXRlSWQiOiIxZGJmZTRlOS1iZjhiLTQ1ZDktOTMwNS05MjhmMjIyMDBiYzAiLCJzZXNzaW9uSWQiOiIxYTU1MWEyYS1hYWU2LTU2M2QtOWFmNy1hM2JmZmFhYjFhNTMiLCJ2aXNpdElkIjoiODIyOWI4ZDYtNWUzMS01YjA1LTgzZmMtNDVjZGMwYTFkMDFkIiwiaWF0IjoxNzY4NDY5NzIwfQ.BY5xdifMYzJdhEuNP_0euSeiYSlob7cdu4qsZ548G1M\",\"sessionId\":\"1a551a2a-aae6-563d-9af7-a3bffaab1a53\",\"visitId\":\"8229b8d6-5e31-5b05-83fc-45cdc0a1d01d\"}"
-                    )
+                    "{\"cache\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3ZWJzaXRlSWQiOiIxZGJmZTRlOS1iZjhiLTQ1ZDktOTMwNS05MjhmMjIyMDBiYzAiLCJzZXNzaW9uSWQiOiIxYTU1MWEyYS1hYWU2LTU2M2QtOWFmNy1hM2JmZmFhYjFhNTMiLCJ2aXNpdElkIjoiODIyOWI4ZDYtNWUzMS01YjA1LTgzZmMtNDVjZGMwYTFkMDFkIiwiaWF0IjoxNzY4NDY5NzIwfQ.BY5xdifMYzJdhEuNP_0euSeiYSlob7cdu4qsZ548G1M\",\"sessionId\":\"1a551a2a-aae6-563d-9af7-a3bffaab1a53\",\"visitId\":\"8229b8d6-5e31-5b05-83fc-45cdc0a1d01d\"}"
+                )
             )
         )
 
@@ -59,11 +59,8 @@ class EndeTilEndeTest {
         )
 
         val message = MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "test-topic")
-            .setHeader(KafkaHeaders.KEY, "event-key")
-            .setHeader(USER_AGENT, "test-agent")
-            .setHeader(EXCLUDE_FILTERS, "")
-            .setHeader(FORWARDED_FOR, "127.0.0.1")
-            .build()
+            .setHeader(KafkaHeaders.KEY, "event-key").setHeader(USER_AGENT, "test-agent").setHeader(EXCLUDE_FILTERS, "")
+            .setHeader(FORWARDED_FOR, "127.0.0.1").build()
 
         kafkaTemplate.send(message)
 
@@ -83,8 +80,8 @@ class EndeTilEndeTest {
         umamiMock.stubFor(
             post(urlEqualTo("/api/send")).willReturn(
                 aResponse().withStatus(200).withBody(
-                        "{\"cache\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3ZWJzaXRlSWQiOiIxZGJmZTRlOS1iZjhiLTQ1ZDktOTMwNS05MjhmMjIyMDBiYzAiLCJzZXNzaW9uSWQiOiIxYTU1MWEyYS1hYWU2LTU2M2QtOWFmNy1hM2JmZmFhYjFhNTMiLCJ2aXNpdElkIjoiODIyOWI4ZDYtNWUzMS01YjA1LTgzZmMtNDVjZGMwYTFkMDFkIiwiaWF0IjoxNzY4NDY5NzIwfQ.BY5xdifMYzJdhEuNP_0euSeiYSlob7cdu4qsZ548G1M\",\"sessionId\":\"1a551a2a-aae6-563d-9af7-a3bffaab1a53\",\"visitId\":\"8229b8d6-5e31-5b05-83fc-45cdc0a1d01d\"}"
-                    )
+                    "{\"cache\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3ZWJzaXRlSWQiOiIxZGJmZTRlOS1iZjhiLTQ1ZDktOTMwNS05MjhmMjIyMDBiYzAiLCJzZXNzaW9uSWQiOiIxYTU1MWEyYS1hYWU2LTU2M2QtOWFmNy1hM2JmZmFhYjFhNTMiLCJ2aXNpdElkIjoiODIyOWI4ZDYtNWUzMS01YjA1LTgzZmMtNDVjZGMwYTFkMDFkIiwiaWF0IjoxNzY4NDY5NzIwfQ.BY5xdifMYzJdhEuNP_0euSeiYSlob7cdu4qsZ548G1M\",\"sessionId\":\"1a551a2a-aae6-563d-9af7-a3bffaab1a53\",\"visitId\":\"8229b8d6-5e31-5b05-83fc-45cdc0a1d01d\"}"
+                )
             )
         )
 
@@ -105,11 +102,8 @@ class EndeTilEndeTest {
         )
 
         val message = MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "test-topic")
-            .setHeader(KafkaHeaders.KEY, "event-key")
-            .setHeader(USER_AGENT, "test-agent")
-            .setHeader(EXCLUDE_FILTERS, "")
-            .setHeader(FORWARDED_FOR, "127.0.0.1")
-            .build()
+            .setHeader(KafkaHeaders.KEY, "event-key").setHeader(USER_AGENT, "test-agent").setHeader(EXCLUDE_FILTERS, "")
+            .setHeader(FORWARDED_FOR, "127.0.0.1").build()
 
         kafkaTemplate.send(message)
 

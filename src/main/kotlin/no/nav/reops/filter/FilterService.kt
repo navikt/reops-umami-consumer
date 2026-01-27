@@ -4,6 +4,8 @@ import io.micrometer.core.instrument.MeterRegistry
 import no.nav.reops.event.Event
 import org.springframework.stereotype.Service
 import io.micrometer.core.instrument.Counter
+import org.slf4j.LoggerFactory
+import kotlin.collections.plus
 
 @Service
 class FilterService(meterRegistry: MeterRegistry) {
@@ -12,29 +14,36 @@ class FilterService(meterRegistry: MeterRegistry) {
     private val urlPolicy: UrlPolicy = DefaultPolicies.urlPolicy()
     private val redactor = Redactor(rules)
 
-    fun filterEvent(event: Event, excludeFilters: Set<String> = emptySet()): Event {
+    fun filterEvent(event: Event, excludeFilters: String? = null): Event {
+        val excludeKeys = DefaultPolicies.findExcludeKeys(excludeFilters)
+        LOG.info("Exclude filters for this event: {}", excludeKeys)
+
         val p = event.payload
         val traverser = Traverser(
-            keyPolicy = keyPolicy, urlPolicy = urlPolicy, redactor = redactor, excludeFilters = excludeFilters
+            keyPolicy = keyPolicy, urlPolicy = urlPolicy, redactor = redactor, excludeKeys = excludeKeys
         )
 
         val sanitized = p.copy(
             website = p.website,
-            hostname = p.hostname.redactedUnlessExcluded("hostname", excludeFilters),
-            screen = p.screen.redactedUnlessExcluded("screen", excludeFilters),
-            language = p.language.redactedUnlessExcluded("language", excludeFilters),
-            title = p.title.redactedUnlessExcluded("title", excludeFilters),
-            url = p.url.redactedUnlessExcluded("url", excludeFilters),
-            referrer = p.referrer.redactedUnlessExcluded("referrer", excludeFilters),
-            name = p.name.redactedUnlessExcluded("name", excludeFilters),
-            data = if ("data" in excludeFilters) p.data else p.data?.let { traverser.transform(it) })
+            hostname = p.hostname.redactedUnlessExcluded("hostname", excludeKeys),
+            screen = p.screen.redactedUnlessExcluded("screen", excludeKeys),
+            language = p.language.redactedUnlessExcluded("language", excludeKeys),
+            title = p.title.redactedUnlessExcluded("title", excludeKeys),
+            url = p.url.redactedUnlessExcluded("url", excludeKeys),
+            referrer = p.referrer.redactedUnlessExcluded("referrer", excludeKeys),
+            name = p.name.redactedUnlessExcluded("name", excludeKeys),
+            data = if ("data" in excludeKeys) p.data else p.data?.let { traverser.transform(it) })
 
         return event.copy(payload = sanitized)
     }
 
-    private fun String?.redactedUnlessExcluded(field: String, excludeFilters: Set<String>): String? {
-        if (field in excludeFilters) return this
+    private fun String?.redactedUnlessExcluded(field: String, excludeKeys: Set<String>): String? {
+        if (field in excludeKeys) return this
         return this?.let { urlPolicy.redactUrl(it, redactor) }
+    }
+
+    private companion object {
+        private val LOG = LoggerFactory.getLogger(FilterService::class.java)
     }
 }
 
@@ -66,6 +75,45 @@ internal object DefaultPolicies {
             "prevLocation"
         ), pathExcludedLabels = setOf("PROXY-FILEPATH")
     )
+
+    val defaultFilter: Set<String> = setOf(
+        "komponent",
+        "lenketekst",
+        "breadcrumbs",
+        "pageType",
+        "pageTheme",
+        "employer",
+        "seksjon",
+        "valg",
+        "jobTitle",
+        "occupationLevel2",
+        "enhet",
+        "filter",
+        "organisasjoner",
+        "destinasjon",
+        "location",
+        "arbeidssted",
+        "kilde",
+        "skjemanavn",
+        "lenkegruppe",
+        "linkText",
+        "descriptionId",
+        "tema",
+        "innholdstype",
+        "yrkestittel",
+        "tlbhrNavn",
+    )
+
+    fun findExcludeKeys(excludeFilters: String?): Set<String> {
+        return if (excludeFilters == null) {
+            defaultFilter
+        } else {
+            parse(excludeFilters) + defaultFilter
+        }
+    }
+
+    fun parse(headerValue: String?): Set<String> =
+        headerValue?.split(',')?.asSequence()?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
 }
 
 internal data class RedactionRule(
