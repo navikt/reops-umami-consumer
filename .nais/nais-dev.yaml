@@ -32,9 +32,10 @@ spec:
     pool: nav-dev
   accessPolicy:
     outbound:
+      rules:
+        - application: umami
       external:
         - host: nav-dev-kafka-nav-dev.aivencloud.com
-        - host: umami.ansatt.dev.nav.no
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: kubernetes
