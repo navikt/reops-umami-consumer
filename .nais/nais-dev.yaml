@@ -40,4 +40,4 @@ spec:
     - name: SPRING_PROFILES_ACTIVE
       value: kubernetes
     - name: REOPS_UMAMI_URL
-      value: "https://umami.ansatt.dev.nav.no"
+      value: "umami.team-researchops.svc.cluster.local"
