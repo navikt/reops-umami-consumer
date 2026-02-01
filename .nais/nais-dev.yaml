@@ -22,12 +22,12 @@ spec:
     enabled: true
     path: /internal/prometheus
   resources:
-    requests:
-      cpu: "100m"
-      memory: "512Mi"
     limits:
       cpu: "500m"
-      memory: "1024Mi"
+      memory: 2048Mi
+    requests:
+      cpu: "100m"
+      memory: 1024Mi
   kafka:
     pool: nav-dev
   accessPolicy:
