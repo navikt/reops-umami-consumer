@@ -7,6 +7,7 @@ import no.nav.reops.event.Event
 import no.nav.reops.event.FORWARDED_FOR
 import no.nav.reops.event.USER_AGENT
 import org.awaitility.Awaitility.await
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -35,6 +36,11 @@ class EndeTilEndeTest {
 
     @Autowired
     lateinit var kafkaTemplate: KafkaTemplate<String, Event>
+
+    @AfterEach
+    fun resetWireMock() {
+        umamiMock.resetAll()
+    }
 
     @Test
     fun `skal kunne konsumere hendelse på kafka uten data`() {

@@ -40,6 +40,7 @@ class KafkaConfiguration(
     fun kafkaListenerContainerFactory(consumerFactory: ConsumerFactory<String, Event>): ConcurrentKafkaListenerContainerFactory<String, Event> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, Event>()
         factory.setConsumerFactory(consumerFactory)
+        factory.containerProperties.ackMode = org.springframework.kafka.listener.ContainerProperties.AckMode.MANUAL
         return factory
     }
 }

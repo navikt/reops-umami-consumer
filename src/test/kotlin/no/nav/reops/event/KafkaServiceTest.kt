@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
+import org.springframework.kafka.support.Acknowledgment
 import java.util.Optional
 import java.util.UUID
 
@@ -41,9 +42,11 @@ class KafkaServiceTest {
         whenever(filterService.filterEvent(eq(event), eq(excludeFilters))).thenReturn(filteredEvent)
 
         val record = consumerRecord(key = key, value = event)
+        val ack: Acknowledgment = mock()
 
         kafkaService.eventListen(
             event = event,
+            ack = ack,
             key = key,
             userAgent = userAgent,
             excludeFilters = excludeFilters,
@@ -58,8 +61,11 @@ class KafkaServiceTest {
                 assertThat(sent.type).isEqualTo("event")
                 assertThat(sent.payload.website).isEqualTo(filteredEvent.payload.website)
                 assertThat(sent.payload.name).isEqualTo("besøk")
-            }, eq(userAgent), eq(forwardedFor)
+            },
+            eq(userAgent),
+            eq(forwardedFor)
         )
+        verify(ack).acknowledge()
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
         val failure = meterRegistry.find("kafka_events_processed_total").tag("result", "failure").counter()
@@ -69,7 +75,7 @@ class KafkaServiceTest {
     }
 
     @Test
-    fun `eventListen - null excludeFilters passes empty set`() {
+    fun `eventListen - null excludeFilters is forwarded as null`() {
         val event = sampleEvent(name = null)
         val filteredEvent = sampleEvent(name = null)
 
@@ -80,9 +86,11 @@ class KafkaServiceTest {
         whenever(filterService.filterEvent(eq(event), eq(null))).thenReturn(filteredEvent)
 
         val record = consumerRecord(key = key, value = event)
+        val ack: Acknowledgment = mock()
 
         kafkaService.eventListen(
             event = event,
+            ack = ack,
             key = key,
             userAgent = userAgent,
             excludeFilters = null,
@@ -97,8 +105,11 @@ class KafkaServiceTest {
                 assertThat(sent.type).isEqualTo("event")
                 assertThat(sent.payload.website).isEqualTo(filteredEvent.payload.website)
                 assertThat(sent.payload.name).isNull()
-            }, eq(userAgent), eq(forwardedFor)
+            },
+            eq(userAgent),
+            eq(forwardedFor)
         )
+        verify(ack).acknowledge()
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
         val failure = meterRegistry.find("kafka_events_processed_total").tag("result", "failure").counter()
@@ -118,10 +129,12 @@ class KafkaServiceTest {
         whenever(filterService.filterEvent(eq(event), any())).thenThrow(RuntimeException("boom"))
 
         val record = consumerRecord(key = key, value = event)
+        val ack: Acknowledgment = mock()
 
         assertThatThrownBy {
             kafkaService.eventListen(
                 event = event,
+                ack = ack,
                 key = key,
                 userAgent = userAgent,
                 excludeFilters = "",
@@ -132,6 +145,7 @@ class KafkaServiceTest {
 
         verify(filterService).filterEvent(eq(event), eq(""))
         verify(umamiService, never()).sendEvent(any(), any(), any())
+        verify(ack, never()).acknowledge()
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
         val failure = meterRegistry.find("kafka_events_processed_total").tag("result", "failure").counter()

@@ -7,6 +7,7 @@ import no.nav.reops.umami.UmamiService
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.kafka.support.Acknowledgment
 import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
@@ -31,7 +32,7 @@ class KafkaService(
         containerFactory = "kafkaListenerContainerFactory"
     )
     fun eventListen(
-        event: Event,
+        event: Event, ack: Acknowledgment,
         @Header(KafkaHeaders.RECEIVED_KEY) key: String,
         @Header(name = USER_AGENT, required = false) userAgent: String?,
         @Header(name = EXCLUDE_FILTERS, required = false) excludeFilters: String?,
@@ -48,6 +49,7 @@ class KafkaService(
 
             umamiService.sendEvent(normalized, safeUserAgent, safeForwardedFor)
             kafkaEventsSuccess.increment()
+            ack.acknowledge()
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()
             LOG.error(
