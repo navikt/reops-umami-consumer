@@ -12,42 +12,26 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
-import java.time.Duration
 
 @Service
 class UmamiService(
     private val umamiClient: WebClient, meterRegistry: MeterRegistry
 ) {
-    private val umamiRequestsSuccess: Counter =
-        Counter.builder("umami_requests_total").tag("result", "success").register(meterRegistry)
-
-    private val umamiRequestsFailure: Counter =
-        Counter.builder("umami_requests_total").tag("result", "failure").register(meterRegistry)
+    private val umamiRequestsSuccess: Counter = meterRegistry.counter("umami_requests_total", "result", "success")
+    private val umamiRequestsFailure: Counter = meterRegistry.counter("umami_requests_total", "result", "failure")
 
     fun sendEvent(event: Event, userAgent: String, forwardedFor: String?) {
-        try {
-            val req = umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON)
-                .header(USER_AGENT, userAgent).apply {
-                    if (forwardedFor != null) header(FORWARDED_FOR, forwardedFor)
-                }.bodyValue(event).retrieve().onStatus(HttpStatusCode::isError) { resp ->
-                    resp.bodyToMono<String>().defaultIfEmpty("").flatMap { body ->
-                        LOG.error("Umami responded with status={} body={}", resp.statusCode().value(), body)
-                        Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
-                    }
-                }.bodyToMono<String>().defaultIfEmpty("").doOnNext { body ->
-                    LOG.info("Umami response body={}", body)
-                    umamiRequestsSuccess.increment()
-                }.onErrorResume { ex ->
-                    umamiRequestsFailure.increment()
-                    LOG.error("Failed to send event to Umami", ex)
-                    Mono.empty()
+        umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON).header(USER_AGENT, userAgent)
+            .apply { if (forwardedFor != null) header(FORWARDED_FOR, forwardedFor) }.bodyValue(event).retrieve()
+            .onStatus(HttpStatusCode::isError) { resp ->
+                resp.bodyToMono<String>().defaultIfEmpty("").flatMap { body ->
+                    LOG.error("Umami responded with status={} body={}", resp.statusCode().value(), body)
+                    Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
                 }
-
-            req.block(Duration.ofSeconds(5))
-        } catch (ex: Exception) {
-            umamiRequestsFailure.increment()
-            LOG.error("Failed to send event to Umami", ex)
-        }
+            }.toBodilessEntity().doOnSuccess { umamiRequestsSuccess.increment() }.doOnError { ex ->
+                umamiRequestsFailure.increment()
+                LOG.error("Failed to send event to Umami", ex)
+            }.onErrorResume { Mono.empty() }.subscribe()
     }
 
     private companion object {
