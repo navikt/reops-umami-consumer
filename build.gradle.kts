@@ -36,7 +36,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:6.2.3")
-	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.0.9")
+	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.1.0")
 }
 
 kotlin {
