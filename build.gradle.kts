@@ -1,8 +1,8 @@
 plugins {
 	id("org.springframework.boot") version "4.0.2"
 	id("io.spring.dependency-management") version "1.1.7"
-	kotlin("jvm") version "2.3.0"
-	kotlin("plugin.spring") version "2.3.0"
+	kotlin("jvm") version "2.3.10"
+	kotlin("plugin.spring") version "2.3.10"
 }
 
 group = "no.nav.reops"
@@ -36,7 +36,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:6.2.3")
-	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.0.9")
+	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.1.0")
 }
 
 kotlin {
