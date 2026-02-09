@@ -2,7 +2,6 @@
 
 ### Prerequisites
 - Java version 21
-- Maven 3.9+
 
 ### Build the project
 ```
