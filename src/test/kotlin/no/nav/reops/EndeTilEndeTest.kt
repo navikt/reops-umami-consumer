@@ -8,12 +8,15 @@ import no.nav.reops.event.FORWARDED_FOR
 import no.nav.reops.event.USER_AGENT
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.kafka.config.KafkaListenerEndpointRegistry
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.kafka.test.context.EmbeddedKafka
+import org.springframework.kafka.test.utils.ContainerTestUtils
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.test.context.ActiveProfiles
 import org.wiremock.spring.ConfigureWireMock
@@ -36,6 +39,17 @@ class EndeTilEndeTest {
 
     @Autowired
     lateinit var kafkaTemplate: KafkaTemplate<String, Event>
+
+    @Autowired
+    lateinit var registry: KafkaListenerEndpointRegistry
+
+    @BeforeEach
+    fun waitForKafkaListener() {
+        // Wait until the @KafkaListener container has partitions assigned
+        registry.listenerContainers.forEach { container ->
+            ContainerTestUtils.waitForAssignment(container, 1)
+        }
+    }
 
     @AfterEach
     fun resetWireMock() {

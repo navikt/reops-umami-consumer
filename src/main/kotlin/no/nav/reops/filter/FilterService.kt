@@ -25,6 +25,7 @@ class FilterService(meterRegistry: MeterRegistry) {
 
         val sanitized = p.copy(
             website = p.website,
+            id = p.id.redactedUnlessExcluded("id", excludeKeys),
             hostname = p.hostname.redactedUnlessExcluded("hostname", excludeKeys),
             screen = p.screen.redactedUnlessExcluded("screen", excludeKeys),
             language = p.language.redactedUnlessExcluded("language", excludeKeys),

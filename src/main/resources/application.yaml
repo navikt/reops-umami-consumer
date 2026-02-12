@@ -6,7 +6,7 @@ spring:
     topic: test2
     consumer:
       group-id: reops-umami-consumer-group
-      auto-offset-reset: latest
+      auto-offset-reset: earliest
       enable-auto-commit: false
       properties:
         max.poll.records: 500
