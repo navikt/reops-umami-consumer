@@ -6,13 +6,11 @@ import no.nav.reops.filter.FilterService
 import no.nav.reops.umami.UmamiService
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
-import org.slf4j.MDC
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
-import java.util.concurrent.ConcurrentHashMap
 
 const val USER_AGENT = "user-agent"
 const val EXCLUDE_FILTERS = "x-exclude-filters"
@@ -20,9 +18,13 @@ const val FORWARDED_FOR = "x-forwarded-for"
 
 @Service
 class KafkaService(
-    private val filterService: FilterService, private val umamiService: UmamiService, private val meterRegistry: MeterRegistry
+    private val filterService: FilterService, private val umamiService: UmamiService, meterRegistry: MeterRegistry
 ) {
-    private val counters = ConcurrentHashMap<String, Counter>()
+    private val kafkaEventsSuccess: Counter =
+        Counter.builder("kafka_events_processed_total").tag("result", "success").register(meterRegistry)
+
+    private val kafkaEventsFailure: Counter =
+        Counter.builder("kafka_events_processed_total").tag("result", "failure").register(meterRegistry)
 
     @KafkaListener(
         topics = ["\${spring.kafka.topic}"],
@@ -37,13 +39,8 @@ class KafkaService(
         @Header(name = FORWARDED_FOR, required = false) forwardedFor: String?,
         record: ConsumerRecord<String, Event>
     ) {
-        val websiteId = event.payload.website.toString()
-        val successCounter = counter("kafka_events_processed_total", "success", websiteId)
-        val failureCounter = counter("kafka_events_processed_total", "failure", websiteId)
-
-        MDC.put("websiteId", websiteId)
         try {
-            LOG.info("Received event with key={} websiteID={} offset={} partition={}", key, websiteId, record.offset(), record.partition())
+            LOG.info("Received event with key={} offset={} partition={}", key, record.offset(), record.partition())
             val filteredEvent = filterService.filterEvent(event, excludeFilters)
 
             val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"
@@ -51,10 +48,10 @@ class KafkaService(
             val normalized = filteredEvent.normalizedForUmami()
 
             umamiService.sendEvent(normalized, safeUserAgent, safeForwardedFor)
-            successCounter.increment()
+            kafkaEventsSuccess.increment()
             ack.acknowledge()
         } catch (ex: Exception) {
-            failureCounter.increment()
+            kafkaEventsFailure.increment()
             LOG.error(
                 "Failed processing kafka event key={} offset={} partition={}",
                 key,
@@ -63,15 +60,6 @@ class KafkaService(
                 ex
             )
             throw ex
-        } finally {
-            MDC.remove("websiteId")
-        }
-    }
-
-    private fun counter(name: String, result: String, websiteId: String): Counter {
-        val key = "result=$result|websiteId=$websiteId"
-        return counters.computeIfAbsent(key) {
-            meterRegistry.counter(name, "result", result, "websiteId", websiteId)
         }
     }
 
