@@ -6,39 +6,39 @@ import org.springframework.stereotype.Service
 import io.micrometer.core.instrument.Counter
 import org.slf4j.LoggerFactory
 import kotlin.collections.plus
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
-class FilterService(meterRegistry: MeterRegistry) {
-    private val rules: List<RedactionRule> = RuleSetFactory.create(meterRegistry)
+class FilterService(private val meterRegistry: MeterRegistry) {
     private val keyPolicy: KeyPolicy = DefaultPolicies.keyPolicy()
     private val urlPolicy: UrlPolicy = DefaultPolicies.urlPolicy()
-    private val redactor = Redactor(rules)
 
     fun filterEvent(event: Event, excludeFilters: String? = null): Event {
         val excludeKeys = DefaultPolicies.findExcludeKeys(excludeFilters)
-        LOG.info("Exclude filters for this event: {}", excludeKeys)
+        LOG.debug("Exclude filters for this event: {}", excludeKeys)
+
+        val rules = RuleSetFactory.create(meterRegistry, event.payload.website)
+        val redactor = Redactor(rules)
 
         val p = event.payload
-        val traverser = Traverser(
-            keyPolicy = keyPolicy, urlPolicy = urlPolicy, redactor = redactor, excludeKeys = excludeKeys
-        )
+        val traverser = Traverser(keyPolicy = keyPolicy, urlPolicy = urlPolicy, redactor = redactor, excludeKeys = excludeKeys)
 
         val sanitized = p.copy(
             website = p.website,
-            id = p.id.redactedUnlessExcluded("id", excludeKeys),
-            hostname = p.hostname.redactedUnlessExcluded("hostname", excludeKeys),
-            screen = p.screen.redactedUnlessExcluded("screen", excludeKeys),
-            language = p.language.redactedUnlessExcluded("language", excludeKeys),
-            title = p.title.redactedUnlessExcluded("title", excludeKeys),
-            url = p.url.redactedUnlessExcluded("url", excludeKeys),
-            referrer = p.referrer.redactedUnlessExcluded("referrer", excludeKeys),
-            name = p.name.redactedUnlessExcluded("name", excludeKeys),
+            id = p.id.redactedUnlessExcluded("id", excludeKeys, redactor),
+            hostname = p.hostname.redactedUnlessExcluded("hostname", excludeKeys, redactor),
+            screen = p.screen.redactedUnlessExcluded("screen", excludeKeys, redactor),
+            language = p.language.redactedUnlessExcluded("language", excludeKeys, redactor),
+            title = p.title.redactedUnlessExcluded("title", excludeKeys, redactor),
+            url = p.url.redactedUnlessExcluded("url", excludeKeys, redactor),
+            referrer = p.referrer.redactedUnlessExcluded("referrer", excludeKeys, redactor),
+            name = p.name.redactedUnlessExcluded("name", excludeKeys, redactor),
             data = if ("data" in excludeKeys) p.data else p.data?.let { traverser.transform(it) })
 
         return event.copy(payload = sanitized)
     }
 
-    private fun String?.redactedUnlessExcluded(field: String, excludeKeys: Set<String>): String? {
+    private fun String?.redactedUnlessExcluded(field: String, excludeKeys: Set<String>, redactor: Redactor): String? {
         if (field in excludeKeys) return this
         return this?.let { urlPolicy.redactUrl(it, redactor) }
     }
@@ -122,36 +122,44 @@ internal data class RedactionRule(
 )
 
 internal object RuleSetFactory {
-    fun create(meterRegistry: MeterRegistry): List<RedactionRule> = listOf(
-        keepRule(meterRegistry),
-        rule("filepath", "PROXY-FILEPATH", FilterPatterns.FILEPATH_REGEX, meterRegistry),
-        rule("fnr", "PROXY-FNR", FilterPatterns.FNR_REGEX, meterRegistry),
-        rule("navident", "PROXY-NAVIDENT", FilterPatterns.NAVIDENT_REGEX, meterRegistry),
-        rule("email", "PROXY-EMAIL", FilterPatterns.EMAIL_REGEX, meterRegistry),
-        rule("ip", "PROXY-IP", FilterPatterns.IP_REGEX, meterRegistry),
-        rule("phone", "PROXY-PHONE", FilterPatterns.PHONE_REGEX, meterRegistry),
-        rule("name", "PROXY-NAME", FilterPatterns.NAME_REGEX, meterRegistry),
-        rule("address", "PROXY-ADDRESS", FilterPatterns.ADDRESS_REGEX, meterRegistry),
-        rule("secret_address", "PROXY-SECRET-ADDRESS", FilterPatterns.SECRET_ADDRESS_REGEX, meterRegistry),
-        rule("account", "PROXY-ACCOUNT", FilterPatterns.ACCOUNT_REGEX, meterRegistry),
-        rule("org_number", "PROXY-ORG-NUMBER", FilterPatterns.ORG_NUMBER_REGEX, meterRegistry),
-        rule("license_plate", "PROXY-LICENSE-PLATE", FilterPatterns.LICENSE_PLATE_REGEX, meterRegistry),
-        rule("search", "PROXY-SEARCH", FilterPatterns.SEARCH_REGEX, meterRegistry)
+    private val counters = ConcurrentHashMap<String, Counter>()
+
+    fun create(meterRegistry: MeterRegistry, websiteId: java.util.UUID): List<RedactionRule> = listOf(
+        keepRule(meterRegistry, websiteId),
+        rule("filepath", "PROXY-FILEPATH", FilterPatterns.FILEPATH_REGEX, meterRegistry, websiteId),
+        rule("fnr", "PROXY-FNR", FilterPatterns.FNR_REGEX, meterRegistry, websiteId),
+        rule("navident", "PROXY-NAVIDENT", FilterPatterns.NAVIDENT_REGEX, meterRegistry, websiteId),
+        rule("email", "PROXY-EMAIL", FilterPatterns.EMAIL_REGEX, meterRegistry, websiteId),
+        rule("ip", "PROXY-IP", FilterPatterns.IP_REGEX, meterRegistry, websiteId),
+        rule("phone", "PROXY-PHONE", FilterPatterns.PHONE_REGEX, meterRegistry, websiteId),
+        rule("name", "PROXY-NAME", FilterPatterns.NAME_REGEX, meterRegistry, websiteId),
+        rule("address", "PROXY-ADDRESS", FilterPatterns.ADDRESS_REGEX, meterRegistry, websiteId),
+        rule("secret_address", "PROXY-SECRET-ADDRESS", FilterPatterns.SECRET_ADDRESS_REGEX, meterRegistry, websiteId),
+        rule("account", "PROXY-ACCOUNT", FilterPatterns.ACCOUNT_REGEX, meterRegistry, websiteId),
+        rule("org_number", "PROXY-ORG-NUMBER", FilterPatterns.ORG_NUMBER_REGEX, meterRegistry, websiteId),
+        rule("license_plate", "PROXY-LICENSE-PLATE", FilterPatterns.LICENSE_PLATE_REGEX, meterRegistry, websiteId),
+        rule("search", "PROXY-SEARCH", FilterPatterns.SEARCH_REGEX, meterRegistry, websiteId)
     )
 
-    private fun keepRule(meterRegistry: MeterRegistry): RedactionRule = RedactionRule(
+    private fun keepRule(meterRegistry: MeterRegistry, websiteId: java.util.UUID): RedactionRule = RedactionRule(
         name = "keep",
         label = "PROXY-KEEP",
         regex = FilterPatterns.KEEP_REGEX,
-        counter = counter(meterRegistry, "keep"),
+        counter = counter(meterRegistry, "keep", websiteId),
         preserve = true
     )
 
-    private fun rule(name: String, label: String, regex: Regex, meterRegistry: MeterRegistry): RedactionRule =
-        RedactionRule(
-            name = name, label = label, regex = regex, counter = counter(meterRegistry, name), preserve = false
-        )
+    private fun rule(
+        name: String, label: String, regex: Regex, meterRegistry: MeterRegistry, websiteId: java.util.UUID
+    ): RedactionRule = RedactionRule(
+        name = name, label = label, regex = regex, counter = counter(meterRegistry, name, websiteId), preserve = false
+    )
 
-    private fun counter(meterRegistry: MeterRegistry, ruleName: String): Counter =
-        Counter.builder("redactions_total").tag("rule", ruleName).register(meterRegistry)
+    private fun counter(meterRegistry: MeterRegistry, ruleName: String, websiteId: java.util.UUID): Counter {
+        val key = "redactions_total|rule=$ruleName|websiteId=$websiteId"
+        return counters.computeIfAbsent(key) {
+            Counter.builder("redactions_total").tag("rule", ruleName).tag("websiteId", websiteId.toString())
+                .register(meterRegistry)
+        }
+    }
 }
