@@ -40,7 +40,7 @@ class KafkaService(
         record: ConsumerRecord<String, Event>
     ) {
         try {
-            LOG.info("Received event with key={} offset={} partition={}", key, record.offset(), record.partition())
+            LOG.info("Received event with key={} website={} offset={} partition={}", key, event.payload.website, record.offset(), record.partition())
             val filteredEvent = filterService.filterEvent(event, excludeFilters)
 
             val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"

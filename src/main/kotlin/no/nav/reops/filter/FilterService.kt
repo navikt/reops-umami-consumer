@@ -16,7 +16,7 @@ class FilterService(meterRegistry: MeterRegistry) {
 
     fun filterEvent(event: Event, excludeFilters: String? = null): Event {
         val excludeKeys = DefaultPolicies.findExcludeKeys(excludeFilters)
-        LOG.info("Exclude filters for this event: {}", excludeKeys)
+        LOG.debug("Exclude filters for this event: {}", excludeKeys)
 
         val p = event.payload
         val traverser = Traverser(
