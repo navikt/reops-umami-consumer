@@ -18,15 +18,21 @@ internal class Redactor(
             result = preservedUrls.preserveAll(result, FilterPatterns.URL_REGEX)
         }
 
-        // 3) Apply rules (same order, same checks)
+        // 3) Apply rules
         for (rule in rules) {
             if (rule.label in excludedLabels) continue
-            if (!rule.regex.containsMatchIn(result)) continue
 
-            rule.counter.increment()
-
-            if (!rule.preserve) {
-                result = rule.regex.replace(result) { "[${rule.label}]" }
+            if (rule.preserve) {
+                if (rule.regex.containsMatchIn(result)) {
+                    rule.counter.increment()
+                }
+            } else {
+                var matched = false
+                result = rule.regex.replace(result) {
+                    matched = true
+                    "[${rule.label}]"
+                }
+                if (matched) rule.counter.increment()
             }
         }
 

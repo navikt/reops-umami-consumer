@@ -5,7 +5,6 @@ import no.nav.reops.event.Event
 import org.springframework.stereotype.Service
 import io.micrometer.core.instrument.Counter
 import org.slf4j.LoggerFactory
-import kotlin.collections.plus
 
 @Service
 class FilterService(meterRegistry: MeterRegistry) {

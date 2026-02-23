@@ -1,9 +1,7 @@
 package no.nav.reops.event
 
 import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties
 import org.springframework.context.annotation.Bean
@@ -12,12 +10,12 @@ import org.springframework.kafka.annotation.EnableKafka
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.*
 import org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-import org.springframework.kafka.support.serializer.JacksonJsonSerializer
 
 @EnableKafka
 @Configuration
 class KafkaConfiguration(
-    private val kafkaProperties: KafkaProperties
+    private val kafkaProperties: KafkaProperties,
+    @Value("\${spring.kafka.listener.concurrency:1}") private val concurrency: Int
 ) {
 
     @Bean
@@ -39,7 +37,8 @@ class KafkaConfiguration(
     @Bean
     fun kafkaListenerContainerFactory(consumerFactory: ConsumerFactory<String, Event>): ConcurrentKafkaListenerContainerFactory<String, Event> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, Event>()
-        factory.setConsumerFactory(consumerFactory)
+        factory.consumerFactory = consumerFactory
+        factory.setConcurrency(concurrency)
         factory.containerProperties.ackMode = org.springframework.kafka.listener.ContainerProperties.AckMode.MANUAL
         return factory
     }
