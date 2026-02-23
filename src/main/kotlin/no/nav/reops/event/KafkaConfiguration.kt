@@ -39,8 +39,8 @@ class KafkaConfiguration(
         val factory = ConcurrentKafkaListenerContainerFactory<String, Event>()
         factory.setConsumerFactory(consumerFactory)
         factory.setConcurrency(concurrency)
-        factory.containerProperties.ackMode = org.springframework.kafka.listener.ContainerProperties.AckMode.MANUAL
-        factory.containerProperties.authExceptionRetryInterval = java.time.Duration.ofSeconds(10)
+        factory.containerProperties.setAckMode(org.springframework.kafka.listener.ContainerProperties.AckMode.MANUAL)
+        factory.containerProperties.setAuthExceptionRetryInterval(java.time.Duration.ofSeconds(10))
         return factory
     }
 }
