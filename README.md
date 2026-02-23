@@ -1,7 +1,7 @@
 # Getting Started
 
 ### Prerequisites
-- Java version 21
+- Java version 25
 
 ### Build the project
 ```
