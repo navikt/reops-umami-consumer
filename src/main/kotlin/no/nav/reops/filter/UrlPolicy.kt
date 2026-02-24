@@ -14,18 +14,15 @@ internal class UrlPolicy(
     fun isUrlLikeField(ctx: NodeContext): Boolean = ctx.key != null && ctx.key in urlLikeKeys
 
     fun redactUrl(url: String, redactor: Redactor, excludePathLabels: Boolean = true): String {
-        val pathLabels = if (excludePathLabels) pathExcludedLabels else emptySet()
-        val (path, queryOrEmpty) = splitPathAndQuery(url)
-        val redactedPath = redactor.redact(input = path, excludedLabels = pathLabels, preserveUrls = false)
-
-        if (queryOrEmpty.isEmpty()) return redactedPath
-
-        val redactedQuery = redactor.redact(input = queryOrEmpty, excludedLabels = emptySet(), preserveUrls = false)
-        return redactedPath + redactedQuery
-    }
-
-    private fun splitPathAndQuery(url: String): Pair<String, String> {
         val q = url.indexOf('?')
-        return if (q < 0) url to "" else url.substring(0, q) to url.substring(q)
+        if (q < 0) {
+            val pathLabels = if (excludePathLabels) pathExcludedLabels else emptySet()
+            return redactor.redact(input = url, excludedLabels = pathLabels, preserveUrls = false)
+        }
+
+        val pathLabels = if (excludePathLabels) pathExcludedLabels else emptySet()
+        val redactedPath = redactor.redact(input = url.substring(0, q), excludedLabels = pathLabels, preserveUrls = false)
+        val redactedQuery = redactor.redact(input = url.substring(q), excludedLabels = emptySet(), preserveUrls = false)
+        return redactedPath + redactedQuery
     }
 }

@@ -8,14 +8,12 @@ internal class Redactor(
     ): String {
         var result = input
 
-        // 1) Preserve UUIDs
-        val preservedUuids = PlaceholderStore(prefix = "__PRESERVED_UUID_", suffix = "__")
-        result = preservedUuids.preserveAll(result, FilterPatterns.UUID_REGEX)
+        // 1) Preserve UUIDs — replace all matches in a single pass using regex.replace
+        result = FilterPatterns.UUID_REGEX.replaceIndexed(result, UUID_PLACEHOLDER)
 
         // 2) Optionally preserve URL-like substrings in free-text
-        val preservedUrls = PlaceholderStore(prefix = "__PRESERVED_URL_", suffix = "__")
         if (preserveUrls) {
-            result = preservedUrls.preserveAll(result, FilterPatterns.URL_REGEX)
+            result = FilterPatterns.URL_REGEX.replaceIndexed(result, URL_PLACEHOLDER)
         }
 
         // 3) Apply rules
@@ -27,46 +25,90 @@ internal class Redactor(
                     rule.counter.increment()
                 }
             } else {
-                var matched = false
-                result = rule.regex.replace(result) {
-                    matched = true
-                    "[${rule.label}]"
+                val replacement = "[${rule.label}]"
+                val replaced = rule.regex.replace(result, replacement)
+                if (replaced !== result) {  // identity check — replace returns same instance when no match
+                    rule.counter.increment()
+                    result = replaced
                 }
-                if (matched) rule.counter.increment()
             }
         }
 
         // 4) Restore URLs
-        result = preservedUrls.restoreAll(result)
+        if (preserveUrls) {
+            result = URL_PLACEHOLDER.restoreAll(result)
+        }
 
         // 5) Restore UUIDs
-        result = preservedUuids.restoreAll(result)
+        result = UUID_PLACEHOLDER.restoreAll(result)
 
         return result
     }
 
-    private class PlaceholderStore(
-        private val prefix: String, private val suffix: String
-    ) {
-        private val values = mutableListOf<String>()
+    private companion object {
+        private val UUID_PLACEHOLDER = PlaceholderPattern(prefix = "__PRESERVED_UUID_", suffix = "__")
+        private val URL_PLACEHOLDER = PlaceholderPattern(prefix = "__PRESERVED_URL_", suffix = "__")
+    }
+}
 
-        fun preserveAll(input: String, regex: Regex): String {
-            var out = input
-            regex.findAll(out).forEachIndexed { i, match ->
-                values.add(match.value)
-                out = out.replace(match.value, placeholder(i))
+/**
+ * Replaces all matches of [this] regex in [input] with indexed placeholders,
+ * storing original values in a thread-local list. Returns the substituted string.
+ */
+private fun Regex.replaceIndexed(input: String, pattern: PlaceholderPattern): String {
+    val originals = pattern.originals.get()
+    originals.clear()
+    var index = 0
+    return replace(input) { match ->
+        originals.add(match.value)
+        pattern.placeholder(index++)
+    }
+}
+
+/**
+ * Holds the prefix/suffix for placeholder tokens and the per-thread captured originals.
+ * Using ThreadLocal avoids allocating a new list per call while remaining safe for
+ * the concurrent Kafka-listener threads.
+ */
+internal class PlaceholderPattern(
+    private val prefix: String, private val suffix: String
+) {
+    val originals: ThreadLocal<MutableList<String>> =
+        ThreadLocal.withInitial { ArrayList(8) }
+
+    fun placeholder(i: Int): String = "$prefix${i}$suffix"
+
+    fun restoreAll(input: String): String {
+        val values = originals.get()
+        if (values.isEmpty()) return input
+
+        val sb = StringBuilder(input.length)
+        var pos = 0
+        // Single-pass restore: scan for prefix, find suffix, look up index
+        while (pos < input.length) {
+            val start = input.indexOf(prefix, pos)
+            if (start < 0) {
+                sb.append(input, pos, input.length)
+                break
             }
-            return out
-        }
-
-        fun restoreAll(input: String): String {
-            var out = input
-            values.forEachIndexed { i, original ->
-                out = out.replace(placeholder(i), original)
+            sb.append(input, pos, start)
+            val numStart = start + prefix.length
+            val end = input.indexOf(suffix, numStart)
+            if (end < 0) {
+                // Malformed placeholder — just append the rest
+                sb.append(input, start, input.length)
+                break
             }
-            return out
+            val idx = input.substring(numStart, end).toIntOrNull()
+            if (idx != null && idx in values.indices) {
+                sb.append(values[idx])
+            } else {
+                // Unknown placeholder — keep as-is
+                sb.append(input, start, end + suffix.length)
+            }
+            pos = end + suffix.length
         }
-
-        private fun placeholder(i: Int): String = "$prefix${i}$suffix"
+        values.clear()
+        return sb.toString()
     }
 }

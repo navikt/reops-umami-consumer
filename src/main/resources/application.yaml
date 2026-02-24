@@ -14,6 +14,8 @@ spring:
         fetch.max.bytes: 1048576  # 1 MB
         fetch.min.bytes: 1
         fetch.max.wait.ms: 100
+    listener:
+      concurrency: 3
   main:
     banner-mode: off
     web-application-type: servlet

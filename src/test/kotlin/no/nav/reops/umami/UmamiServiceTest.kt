@@ -3,7 +3,6 @@ package no.nav.reops.umami
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.nav.reops.event.Event
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.springframework.http.HttpMethod
@@ -35,9 +34,9 @@ class UmamiServiceTest {
         assertEquals(0.0, failureCounter(registry))
     }
 
-    @ParameterizedTest(name = "status={0} => failure counter incremented and exception thrown")
+    @ParameterizedTest(name = "status={0} => failure counter incremented, no exception thrown")
     @CsvSource("400", "500")
-    fun `umami_requests_total counts failure correctly and throws`(status: Int) {
+    fun `umami_requests_total counts failure correctly and does not throw`(status: Int) {
         val registry = SimpleMeterRegistry()
         val builder = RestClient.builder().baseUrl("http://localhost")
         val mockServer = MockRestServiceServer.bindTo(builder).build()
@@ -46,9 +45,7 @@ class UmamiServiceTest {
         mockServer.expect(requestTo("http://localhost/api/send")).andExpect(method(HttpMethod.POST))
             .andRespond(withStatus(HttpStatusCode.valueOf(status)))
 
-        assertThrows<Exception> {
-            service.sendEvent(event = sampleEvent(), userAgent = "Mozilla/5.0", forwardedFor = "127.0.0.1")
-        }
+        service.sendEvent(event = sampleEvent(), userAgent = "Mozilla/5.0", forwardedFor = "127.0.0.1")
 
         mockServer.verify()
         assertEquals(0.0, successCounter(registry))
