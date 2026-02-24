@@ -21,7 +21,8 @@ internal class UrlPolicy(
         }
 
         val pathLabels = if (excludePathLabels) pathExcludedLabels else emptySet()
-        val redactedPath = redactor.redact(input = url.substring(0, q), excludedLabels = pathLabels, preserveUrls = false)
+        val redactedPath =
+            redactor.redact(input = url.substring(0, q), excludedLabels = pathLabels, preserveUrls = false)
         val redactedQuery = redactor.redact(input = url.substring(q), excludedLabels = emptySet(), preserveUrls = false)
         return redactedPath + redactedQuery
     }

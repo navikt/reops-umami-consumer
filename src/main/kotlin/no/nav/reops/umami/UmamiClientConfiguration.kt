@@ -11,8 +11,6 @@ class UmamiClientConfiguration(
     @Value("\${reops.umami.url}") private val umamiUrl: String
 ) {
     @Bean
-    fun umamiClient(): RestClient = RestClient.builder()
-        .baseUrl(umamiUrl)
-        .requestFactory(HttpComponentsClientHttpRequestFactory())
-        .build()
+    fun umamiClient(): RestClient =
+        RestClient.builder().baseUrl(umamiUrl).requestFactory(HttpComponentsClientHttpRequestFactory()).build()
 }

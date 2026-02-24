@@ -73,8 +73,7 @@ private fun Regex.replaceIndexed(input: String, pattern: PlaceholderPattern): St
 internal class PlaceholderPattern(
     private val prefix: String, private val suffix: String
 ) {
-    val originals: ThreadLocal<MutableList<String>> =
-        ThreadLocal.withInitial { ArrayList(8) }
+    val originals: ThreadLocal<MutableList<String>> = ThreadLocal.withInitial { ArrayList(8) }
 
     fun placeholder(i: Int): String = "$prefix${i}$suffix"
 

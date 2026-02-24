@@ -32,7 +32,8 @@ class KafkaService(
         containerFactory = "kafkaListenerContainerFactory"
     )
     fun eventListen(
-        event: Event, ack: Acknowledgment,
+        event: Event,
+        ack: Acknowledgment,
         @Header(KafkaHeaders.RECEIVED_KEY) key: String,
         @Header(name = USER_AGENT, required = false) userAgent: String?,
         @Header(name = EXCLUDE_FILTERS, required = false) excludeFilters: String?,
@@ -40,7 +41,13 @@ class KafkaService(
         record: ConsumerRecord<String, Event>
     ) {
         try {
-            LOG.info("Received event with key={} website={} offset={} partition={}", key, event.payload.website, record.offset(), record.partition())
+            LOG.info(
+                "Received event with key={} website={} offset={} partition={}",
+                key,
+                event.payload.website,
+                record.offset(),
+                record.partition()
+            )
             val filteredEvent = filterService.filterEvent(event, excludeFilters)
 
             val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"
