@@ -18,7 +18,18 @@ repositories {
 	mavenCentral()
 }
 
+// Substitute org.lz4:lz4-java with the maintained fork to fix CVE-2025-12183 and CVE-2025-66566
+configurations.all {
+	resolutionStrategy.eachDependency {
+		if (requested.group == "org.lz4" && requested.name == "lz4-java") {
+			useTarget("at.yawk.lz4:lz4-java:1.10.3")
+			because("CVE-2025-12183, CVE-2025-66566")
+		}
+	}
+}
+
 dependencies {
+
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 
