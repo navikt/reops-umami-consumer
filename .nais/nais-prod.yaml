@@ -47,3 +47,8 @@ spec:
         -XX:MaxRAMPercentage=70
         -XX:InitialRAMPercentage=50
         -XX:+ExitOnOutOfMemoryError
+        -XX:+UseContainerSupport
+        -XX:+ZGenerational
+        -XX:+AlwaysPreTouch
+        -XX:+UseStringDeduplication
+        -Xss256k

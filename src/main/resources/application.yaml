@@ -9,14 +9,16 @@ spring:
       auto-offset-reset: earliest
       enable-auto-commit: false
       properties:
-        max.poll.records: 500
+        max.poll.records: 100
         max.poll.interval.ms: 300000
-        fetch.max.bytes: 1048576  # 1 MB
+        fetch.max.bytes: 524288  # 512 KB
         fetch.min.bytes: 1
         fetch.max.wait.ms: 100
   main:
     banner-mode: off
     web-application-type: reactive
+  codec:
+    max-in-memory-size: 256KB
   threads:
     virtual:
       enabled: true

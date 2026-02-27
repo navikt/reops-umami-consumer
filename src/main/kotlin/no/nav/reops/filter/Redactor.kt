@@ -43,24 +43,33 @@ internal class Redactor(
         private val prefix: String, private val suffix: String
     ) {
         private val values = mutableListOf<String>()
+        private val restoreRegex by lazy {
+            Regex(Regex.escape(prefix) + "(\\d+)" + Regex.escape(suffix))
+        }
 
         fun preserveAll(input: String, regex: Regex): String {
-            var out = input
-            regex.findAll(out).forEachIndexed { i, match ->
+            val matches = regex.findAll(input).toList()
+            if (matches.isEmpty()) return input
+
+            val sb = StringBuilder(input.length)
+            var lastEnd = 0
+            for (match in matches) {
+                sb.append(input, lastEnd, match.range.first)
+                val idx = values.size
                 values.add(match.value)
-                out = out.replace(match.value, placeholder(i))
+                sb.append(prefix).append(idx).append(suffix)
+                lastEnd = match.range.last + 1
             }
-            return out
+            sb.append(input, lastEnd, input.length)
+            return sb.toString()
         }
 
         fun restoreAll(input: String): String {
-            var out = input
-            values.forEachIndexed { i, original ->
-                out = out.replace(placeholder(i), original)
+            if (values.isEmpty()) return input
+            return restoreRegex.replace(input) { mr ->
+                val idx = mr.groupValues[1].toInt()
+                if (idx in values.indices) values[idx] else mr.value
             }
-            return out
         }
-
-        private fun placeholder(i: Int): String = "$prefix${i}$suffix"
     }
 }

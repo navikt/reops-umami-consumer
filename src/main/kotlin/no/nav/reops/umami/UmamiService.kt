@@ -21,17 +21,20 @@ class UmamiService(
     private val umamiRequestsFailure: Counter = meterRegistry.counter("umami_requests_total", "result", "failure")
 
     fun sendEvent(event: Event, userAgent: String, forwardedFor: String?) {
-        umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON).header(USER_AGENT, userAgent)
-            .apply { if (forwardedFor != null) header(FORWARDED_FOR, forwardedFor) }.bodyValue(event).retrieve()
-            .onStatus(HttpStatusCode::isError) { resp ->
-                resp.bodyToMono<String>().defaultIfEmpty("").flatMap { body ->
-                    LOG.error("Umami responded with status={} body={}", resp.statusCode().value(), body)
-                    Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
-                }
-            }.toBodilessEntity().doOnSuccess { umamiRequestsSuccess.increment() }.doOnError { ex ->
-                umamiRequestsFailure.increment()
-                LOG.error("Failed to send event to Umami", ex)
-            }.onErrorResume { Mono.empty() }.subscribe()
+        try {
+            umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON).header(USER_AGENT, userAgent)
+                .apply { if (forwardedFor != null) header(FORWARDED_FOR, forwardedFor) }.bodyValue(event).retrieve()
+                .onStatus(HttpStatusCode::isError) { resp ->
+                    resp.bodyToMono<String>().defaultIfEmpty("").flatMap { body ->
+                        LOG.error("Umami responded with status={} body={}", resp.statusCode().value(), body)
+                        Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
+                    }
+                }.toBodilessEntity().block()
+            umamiRequestsSuccess.increment()
+        } catch (ex: Exception) {
+            umamiRequestsFailure.increment()
+            LOG.error("Failed to send event to Umami", ex)
+        }
     }
 
     private companion object {
