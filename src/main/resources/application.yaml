@@ -17,9 +17,6 @@ spring:
   main:
     banner-mode: off
     web-application-type: reactive
-  threads:
-    virtual:
-      enabled: true
   jackson:
     default-property-inclusion: non_null
 
