@@ -25,8 +25,7 @@ class UmamiService(
             umamiRequestsSuccess.increment()
         } catch (ex: Exception) {
             umamiRequestsFailure.increment()
-            LOG.error("Failed to send event to Umami", ex)
-            throw ex
+            LOG.error("Failed to send event to Umami: {}", ex.message, ex)
         }
     }
 
