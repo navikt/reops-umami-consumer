@@ -3,7 +3,7 @@ import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 plugins {
 	id("org.springframework.boot") version "4.0.3"
 	id("io.spring.dependency-management") version "1.1.7"
-	id("org.graalvm.buildtools.native") version "0.10.6"
+	id("org.graalvm.buildtools.native") version "0.11.4"
 	kotlin("jvm") version "2.3.10"
 	kotlin("plugin.spring") version "2.3.10"
 }
@@ -39,7 +39,7 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
 	implementation("org.springframework.boot:spring-boot-starter-kafka")
-	implementation("at.yawk.lz4:lz4-java:1.10.3")
+	implementation("at.yawk.lz4:lz4-java:1.10.4")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("io.micrometer:micrometer-registry-prometheus")
 
@@ -50,7 +50,7 @@ dependencies {
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:6.2.3")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.1.0")
+	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.2.0")
 }
 
 kotlin {
