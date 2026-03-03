@@ -22,7 +22,7 @@ repositories {
 configurations.all {
 	resolutionStrategy.eachDependency {
 		if (requested.group == "org.lz4" && requested.name == "lz4-java") {
-			useTarget("at.yawk.lz4:lz4-java:1.10.3")
+			useTarget("at.yawk.lz4:lz4-java:1.10.4")
 			because("CVE-2025-12183, CVE-2025-66566")
 		}
 	}
@@ -47,7 +47,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:6.2.3")
-	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.1.0")
+	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.2.0")
 }
 
 kotlin {
