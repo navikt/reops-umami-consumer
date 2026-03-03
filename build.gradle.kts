@@ -1,6 +1,9 @@
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+
 plugins {
 	id("org.springframework.boot") version "4.0.3"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("org.graalvm.buildtools.native") version "0.10.6"
 	kotlin("jvm") version "2.3.10"
 	kotlin("plugin.spring") version "2.3.10"
 }
@@ -10,7 +13,9 @@ version = "0.0.1-SNAPSHOT"
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(
+			providers.gradleProperty("javaVersion").getOrElse("25")
+		)
 	}
 }
 
@@ -18,35 +23,33 @@ repositories {
 	mavenCentral()
 }
 
-// Substitute org.lz4:lz4-java with the maintained fork to fix CVE-2025-12183 and CVE-2025-66566
-configurations.all {
-	resolutionStrategy.eachDependency {
-		if (requested.group == "org.lz4" && requested.name == "lz4-java") {
-			useTarget("at.yawk.lz4:lz4-java:1.10.3")
-			because("CVE-2025-12183, CVE-2025-66566")
-		}
+configurations.configureEach {
+	exclude(group = "org.lz4", module = "lz4-java")
+	resolutionStrategy.capabilitiesResolution.withCapability("org.lz4", "lz4-java") {
+		select(candidates.first { it.id.let { id -> id is ModuleComponentIdentifier && id.group == "at.yawk.lz4" } })
 	}
 }
 
 dependencies {
-
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("tools.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib")
-	implementation("org.springframework.boot:spring-boot-autoconfigure")
+
 	implementation("org.springframework.boot:spring-boot-starter-kafka")
+	implementation("at.yawk.lz4:lz4-java:1.10.3")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("io.micrometer:micrometer-registry-prometheus")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
+
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:6.2.3")
+	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.1.0")
 }
 
@@ -62,4 +65,28 @@ tasks.withType<Test> {
 
 tasks.named<Jar>("bootJar") {
 	archiveFileName.set("app.jar")
+}
+
+graalvmNative {
+	binaries {
+		named("main") {
+			imageName.set("app")
+			mainClass.set("no.nav.reops.UmamiConsumerApplicationKt")
+		}
+	}
+	binaries.all {
+		buildArgs.addAll(
+			"-H:+ReportExceptionStackTraces",
+			"-J-Xmx6g",
+
+			// Reduce image size: exclude AWT (not needed for a Kafka consumer)
+			"--exclude-config", ".*/java\\.desktop/.*",
+
+			// Strip debug symbols from the binary
+			"-H:-IncludeMethodData",
+
+			// Optimize for size over peak throughput
+			"-Os",
+		)
+	}
 }

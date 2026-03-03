@@ -1,6 +1,6 @@
 package no.nav.reops.event
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
@@ -18,7 +18,7 @@ class EventSerializationTest {
         )
 
         val node = mapper.readTree(mapper.writeValueAsString(event))
-        val payload = node.get("payload")
+        val payload = node["payload"]
 
         assertFalse(payload.has("id"))
     }
@@ -31,9 +31,8 @@ class EventSerializationTest {
         )
 
         val node = mapper.readTree(mapper.writeValueAsString(event))
-        val payload = node.get("payload")
+        val payload = node["payload"]
 
-        assertEquals("event-123", payload.get("id").asText())
+        assertEquals("event-123", payload["id"].asString())
     }
 }
-
