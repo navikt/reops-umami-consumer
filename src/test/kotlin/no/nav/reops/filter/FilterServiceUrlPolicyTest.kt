@@ -182,4 +182,18 @@ class FilterServiceUrlPolicyTest {
         assertEquals("https://example.com/path/to/person/[PROXY-EMAIL]/mail/view", out.payload.referrer)
         assertEquals("https://example.com/path/to/person/[PROXY-EMAIL]/mail/view", out.payload.url)
     }
+
+    @Test
+    fun `filterEvent redacts dot-separated name in payload url path`() {
+        val service = filterService()
+        val base = TestEventFactory.minimalEvent()
+        val event = base.copy(
+            type = "event", payload = base.payload.copy(
+                url = "/Users/Kenneth.Bakke.Isaksen/dev/reops/reops-meta/"
+            )
+        )
+
+        val out = service.filterEvent(event)
+        assertEquals("/Users/[PROXY-NAME]/dev/reops/reops-meta/", out.payload.url)
+    }
 }

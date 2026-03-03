@@ -130,7 +130,7 @@ These rules apply to all string values unless explicitly excluded (e.g. URL path
 | Email               | `PROXY-EMAIL`          | Email addresses              | `[PROXY-EMAIL]`          |
 | IP address          | `PROXY-IP`             | IPv4 strings                 | `[PROXY-IP]`             |
 | Phone               | `PROXY-PHONE`          | 8-digit numbers              | `[PROXY-PHONE]`          |
-| Name                | `PROXY-NAME`           | Simple full-name patterns    | `[PROXY-NAME]`           |
+| Name                | `PROXY-NAME`           | Full-name patterns (space or dot separated) | `[PROXY-NAME]`           |
 | Address             | `PROXY-ADDRESS`        | Postal address-like patterns | `[PROXY-ADDRESS]`        |
 | Secret address      | `PROXY-SECRET-ADDRESS` | “hemmelig adresse”           | `[PROXY-SECRET-ADDRESS]` |
 | Account number      | `PROXY-ACCOUNT`        | `1234.56.78901` format       | `[PROXY-ACCOUNT]`        |
