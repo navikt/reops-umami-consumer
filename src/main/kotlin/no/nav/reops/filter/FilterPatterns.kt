@@ -9,7 +9,21 @@ internal object FilterPatterns {
     val IP_REGEX = Regex("(?<!\\d)\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?!\\d)")
     val PHONE_REGEX = Regex("(?<!\\d)[2-9]\\d{7}(?!\\d)")
 
-    val NAME_REGEX = Regex("\\b[A-ZÆØÅ][a-zæøå]{1,20}[\\s.][A-ZÆØÅ][a-zæøå]{1,20}(?:[\\s.][A-ZÆØÅ][a-zæøå]{1,20})?\\b")
+    // Words that should never be treated as (parts of) a person's name.
+    private val NAME_EXCLUSIONS = setOf(
+        "Norge",
+        "Bosatt",
+    )
+
+    private val NOT_EXCLUDED_WORD: String = run {
+        val alt = NAME_EXCLUSIONS.joinToString("|") { Regex.escape(it) }
+        // Capitalized word that is NOT one of the excluded words
+        "(?!(?:$alt)\\b)[A-ZÆØÅ][a-zæøå]{1,20}"
+    }
+
+    val NAME_REGEX = Regex(
+        "\\b$NOT_EXCLUDED_WORD[\\s.]$NOT_EXCLUDED_WORD(?:[\\s.]$NOT_EXCLUDED_WORD)?\\b"
+    )
     val ADDRESS_REGEX = Regex("\\b\\d{4}\\s[A-ZÆØÅ][A-ZÆØÅa-zæøå]+(?:\\s[A-ZÆØÅa-zæøå]+)*\\b")
 
     val SECRET_ADDRESS_REGEX = Regex("(?i)hemmelig(?:%20|\\s+)(?:20\\s*%(?:%20|\\s+))?adresse")

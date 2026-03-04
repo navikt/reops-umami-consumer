@@ -24,23 +24,21 @@ class FilterServiceNameRedactionTest {
     }
 
     @Test
-    fun `Hele Norge is treated as name by regex`() {
-        // The Kotlin NAME_REGEX matches any two capitalized words.
-        // Unlike the Rust implementation there is no "Norge" exclusion.
+    fun `Hele Norge is not redacted because Norge is excluded`() {
         val result = redact("Hele Norge")
-        assertEquals("[PROXY-NAME]", result)
+        assertEquals("Hele Norge", result)
     }
 
     @Test
-    fun `Bank Norge is treated as name by regex`() {
+    fun `Bank Norge is not redacted because Norge is excluded`() {
         val result = redact("Bank Norge")
-        assertEquals("[PROXY-NAME]", result)
+        assertEquals("Bank Norge", result)
     }
 
     @Test
-    fun `Norge Bank is treated as name by regex`() {
+    fun `Norge Bank is not redacted because Norge is excluded`() {
         val result = redact("Norge Bank")
-        assertEquals("[PROXY-NAME]", result)
+        assertEquals("Norge Bank", result)
     }
 
     @Test
@@ -57,18 +55,22 @@ class FilterServiceNameRedactionTest {
     }
 
     @Test
-    fun `Stor Norge Bank is treated as name by regex`() {
-        // In Rust, "Norge" is excluded so "Stor Norge Bank" is preserved.
-        // In Kotlin there is no "Norge" exclusion, so it matches as a 3-word name.
+    fun `Stor Norge Bank is not redacted because Norge is excluded`() {
         val result = redact("Stor Norge Bank")
-        assertEquals("[PROXY-NAME]", result)
+        assertEquals("Stor Norge Bank", result)
     }
 
     @Test
-    fun `Hele Vakre Norge matches name pattern`() {
+    fun `Hele Vakre Norge is not fully redacted because Norge is excluded`() {
         val result = redact("Hele Vakre Norge")
-        // Either the whole thing is redacted as 3-word name or "Hele Vakre" is redacted with Norge left
-        assert(result == "[PROXY-NAME]" || result == "[PROXY-NAME] Norge")
+        // "Hele Vakre" still matches as a two-word name, but "Norge" is preserved
+        assertEquals("[PROXY-NAME] Norge", result)
+    }
+
+    @Test
+    fun `Bosatt Norge is not redacted because both words are excluded`() {
+        val result = redact("Bosatt Norge")
+        assertEquals("Bosatt Norge", result)
     }
 }
 
