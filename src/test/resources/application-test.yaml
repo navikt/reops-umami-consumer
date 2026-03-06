@@ -3,7 +3,6 @@ spring:
     name: reops-umami-consumer-test
   kafka:
     topic: test-topic
-    dlq-topic: test-topic-dlq
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     consumer:
       group-id: test-group

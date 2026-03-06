@@ -2,7 +2,6 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BROKERS}
     topic: team-researchops.reops-insight-event
-    dlq-topic: team-researchops.reops-insight-event-dlq
     properties:
       security.protocol: SSL
       ssl.endpoint.identification.algorithm: ""

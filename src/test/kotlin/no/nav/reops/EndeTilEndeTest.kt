@@ -30,7 +30,7 @@ import java.util.UUID
 @ActiveProfiles("test")
 @EnableWireMock(ConfigureWireMock(name = "umami-mock", port = 0))
 @EmbeddedKafka(
-    partitions = 1, topics = ["test-topic", "test-topic-dlq"], bootstrapServersProperty = "spring.kafka.bootstrap-servers"
+    partitions = 1, topics = ["test-topic", "test-topic-retry", "test-topic-dlt"], bootstrapServersProperty = "spring.kafka.bootstrap-servers"
 )
 class EndeTilEndeTest {
 
