@@ -34,6 +34,8 @@ management:
 reops:
   umami:
     url: http://localhost:3000
+  dlq:
+    retry-interval: PT10M
 
 logging:
   level:

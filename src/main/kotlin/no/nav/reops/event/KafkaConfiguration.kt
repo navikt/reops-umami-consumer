@@ -47,6 +47,38 @@ class KafkaConfiguration(
     }
 
     @Bean
+    fun dlqConsumerFactory(): ConsumerFactory<String, Event> {
+        val configProps = kafkaProperties.buildConsumerProperties().toMutableMap()
+        configProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
+        configProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = JacksonJsonDeserializer::class.java
+        configProps[ConsumerConfig.GROUP_ID_CONFIG] = "${kafkaProperties.consumer.groupId}"
+        configProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest"
+        configProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = 10
+
+        val valueDeserializer = JacksonJsonDeserializer(Event::class.java).apply {
+            addTrustedPackages("*")
+        }
+
+        return DefaultKafkaConsumerFactory(
+            configProps, StringDeserializer(), valueDeserializer
+        )
+    }
+
+    @Bean
+    fun mainTopicKafkaTemplate(): KafkaTemplate<String, Event> {
+        val producerProps = kafkaProperties.buildProducerProperties().toMutableMap()
+        producerProps[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        producerProps.remove(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)
+        return KafkaTemplate(
+            DefaultKafkaProducerFactory(
+                producerProps,
+                StringSerializer(),
+                JacksonJsonSerializer<Event>()
+            )
+        )
+    }
+
+    @Bean
     fun kafkaErrorHandler(): DefaultErrorHandler {
         val producerProps = kafkaProperties.buildProducerProperties().toMutableMap()
         producerProps[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
@@ -82,6 +114,16 @@ class KafkaConfiguration(
         factory.setConsumerFactory(consumerFactory)
         factory.containerProperties.ackMode = org.springframework.kafka.listener.ContainerProperties.AckMode.MANUAL
         factory.setCommonErrorHandler(kafkaErrorHandler)
+        return factory
+    }
+
+    @Bean
+    fun dlqKafkaListenerContainerFactory(
+        dlqConsumerFactory: ConsumerFactory<String, Event>
+    ): ConcurrentKafkaListenerContainerFactory<String, Event> {
+        val factory = ConcurrentKafkaListenerContainerFactory<String, Event>()
+        factory.setConsumerFactory(dlqConsumerFactory)
+        factory.containerProperties.ackMode = org.springframework.kafka.listener.ContainerProperties.AckMode.MANUAL
         return factory
     }
 }

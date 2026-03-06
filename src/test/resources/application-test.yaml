@@ -14,6 +14,8 @@ spring:
 reops:
   umami:
     url: http://localhost:${wiremock.server.port}
+  dlq:
+    retry-interval: PT5S
 
 logging:
   level:
