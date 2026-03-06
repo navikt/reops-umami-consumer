@@ -3,7 +3,6 @@ spring:
     name: reops-umami-consumer-test
   kafka:
     topic: test-topic
-    dlq-topic: test-topic-dlq
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     consumer:
       group-id: test-group
@@ -14,8 +13,6 @@ spring:
 reops:
   umami:
     url: http://localhost:${wiremock.server.port}
-  dlq:
-    retry-interval: PT5S
 
 logging:
   level:

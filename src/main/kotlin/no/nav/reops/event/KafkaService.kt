@@ -6,8 +6,11 @@ import no.nav.reops.filter.FilterService
 import no.nav.reops.umami.UmamiService
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
+import org.springframework.kafka.annotation.DltHandler
 import org.springframework.kafka.annotation.KafkaListener
-import org.springframework.kafka.support.Acknowledgment
+import org.springframework.kafka.annotation.RetryableTopic
+import org.springframework.kafka.annotation.BackOff
+import org.springframework.kafka.retrytopic.SameIntervalTopicReuseStrategy
 import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
@@ -26,13 +29,22 @@ class KafkaService(
     private val kafkaEventsFailure: Counter =
         Counter.builder("kafka_events_processed_total").tag("result", "failure").register(meterRegistry)
 
+    private val kafkaEventsDlt: Counter =
+        Counter.builder("kafka_events_dlt_total").register(meterRegistry)
+
+    @RetryableTopic(
+        attempts = "2", // Dont change! - creates more topics
+        backOff = BackOff(delay = 300_000), // Dont add more backoff! - creates more topics
+        sameIntervalTopicReuseStrategy = SameIntervalTopicReuseStrategy.SINGLE_TOPIC,
+        autoCreateTopics = "false"
+    )
     @KafkaListener(
         topics = ["\${spring.kafka.topic}"],
         groupId = "\${spring.kafka.consumer.group-id}",
         containerFactory = "kafkaListenerContainerFactory"
     )
     fun eventListen(
-        event: Event, ack: Acknowledgment,
+        event: Event,
         @Header(KafkaHeaders.RECEIVED_KEY) key: String,
         @Header(name = USER_AGENT, required = false) userAgent: String?,
         @Header(name = EXCLUDE_FILTERS, required = false) excludeFilters: String?,
@@ -49,7 +61,6 @@ class KafkaService(
 
             umamiService.sendEvent(normalized, safeUserAgent, safeForwardedFor)
             kafkaEventsSuccess.increment()
-            ack.acknowledge()
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()
             LOG.error(
@@ -61,6 +72,19 @@ class KafkaService(
             )
             throw ex
         }
+    }
+
+    @DltHandler
+    fun handleDlt(
+        event: Event,
+        @Header(KafkaHeaders.RECEIVED_KEY) key: String,
+        record: ConsumerRecord<String, Event>
+    ) {
+        kafkaEventsDlt.increment()
+        LOG.error(
+            "Message exhausted all retries and sent to DLT: key={} website={} offset={} partition={}",
+            key, event.payload.website, record.offset(), record.partition()
+        )
     }
 
     private companion object {
