@@ -4,6 +4,7 @@ spring:
   kafka:
     bootstrap-servers: localhost:9094
     topic: test2
+    dlq-topic: test2-dlq
     consumer:
       group-id: reops-umami-consumer-group
       auto-offset-reset: earliest
