@@ -10,8 +10,12 @@ import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientRequestException
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
+import reactor.netty.http.client.PrematureCloseException
+import reactor.util.retry.Retry
+import java.time.Duration
 
 @Service
 class UmamiService(
@@ -28,10 +32,19 @@ class UmamiService(
                     LOG.error("Umami responded with status={} body={}", resp.statusCode().value(), body)
                     Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
                 }
-            }.toBodilessEntity().doOnSuccess { umamiRequestsSuccess.increment() }.doOnError { ex ->
+            }.toBodilessEntity()
+            .retryWhen(
+                Retry.backoff(3, Duration.ofMillis(500))
+                    .filter { it is PrematureCloseException || (it is WebClientRequestException && it.cause is PrematureCloseException) }
+                    .doBeforeRetry { LOG.warn("Retrying after connection error (attempt {})", it.totalRetries() + 1) }
+            )
+            .doOnSuccess { umamiRequestsSuccess.increment() }
+            .doOnError { ex ->
                 umamiRequestsFailure.increment()
                 LOG.error("Failed to send event to Umami", ex)
-            }.onErrorResume { Mono.empty() }.subscribe()
+            }
+            .onErrorResume { Mono.empty() }
+            .block()
     }
 
     private companion object {

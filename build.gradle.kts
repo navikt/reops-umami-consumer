@@ -61,6 +61,11 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	jvmArgs("--enable-native-access=ALL-UNNAMED")
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+	jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.named<Jar>("bootJar") {
@@ -88,10 +93,10 @@ graalvmNative {
 			"-Os",
 		)
 
-		if (System.getenv("CI") == null) {
-			buildArgs.add("-J-Xmx6g")
-		} else {
+		if (System.getenv("CI").toBoolean()) {
 			buildArgs.add("-J-Xmx32g")
+		} else {
+			buildArgs.add("-J-Xmx6g")
 		}
 	}
 }
