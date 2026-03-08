@@ -4,11 +4,20 @@ spring:
   kafka:
     bootstrap-servers: localhost:9094
     topic: test2
+    listener:
+      ack-mode: record
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
     consumer:
       group-id: reops-umami-consumer-group
       auto-offset-reset: earliest
       enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
       properties:
+        spring.json.value.default.type: no.nav.reops.event.Event
+        spring.json.trusted.packages: "*"
         max.poll.records: 500
         max.poll.interval.ms: 300000
         fetch.max.bytes: 1048576  # 1 MB

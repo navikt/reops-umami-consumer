@@ -40,8 +40,7 @@ class KafkaService(
     )
     @KafkaListener(
         topics = ["\${spring.kafka.topic}"],
-        groupId = "\${spring.kafka.consumer.group-id}",
-        containerFactory = "kafkaListenerContainerFactory"
+        groupId = "\${spring.kafka.consumer.group-id}"
     )
     fun eventListen(
         event: Event,
@@ -77,14 +76,18 @@ class KafkaService(
     @DltHandler
     fun handleDlt(
         event: Event,
-        @Header(KafkaHeaders.RECEIVED_KEY) key: String,
+        @Header(KafkaHeaders.RECEIVED_KEY, required = false) key: String?,
         record: ConsumerRecord<String, Event>
     ) {
-        kafkaEventsDlt.increment()
-        LOG.error(
-            "Message exhausted all retries and sent to DLT: key={} website={} offset={} partition={}",
-            key, event.payload.website, record.offset(), record.partition()
-        )
+        try {
+            kafkaEventsDlt.increment()
+            LOG.error(
+                "Message exhausted all retries and sent to DLT: key={} website={} offset={} partition={}",
+                key, event.payload.website, record.offset(), record.partition()
+            )
+        } catch (ex: Exception) {
+            LOG.error("Error in DLT handler for offset={} partition={}", record.offset(), record.partition(), ex)
+        }
     }
 
     private companion object {

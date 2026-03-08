@@ -1,21 +1,11 @@
 package no.nav.reops.event
 
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.common.serialization.StringDeserializer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.annotation.EnableKafka
-import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
-import org.springframework.kafka.core.ConsumerFactory
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.listener.ContainerProperties
-import org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-import org.springframework.kafka.support.serializer.JacksonJsonSerializer
 
 @EnableKafka
 @Configuration
@@ -24,42 +14,7 @@ class KafkaConfiguration(
 ) {
 
     @Bean
-    fun consumerFactory(): ConsumerFactory<String, Event> {
-        val configProps = kafkaProperties.buildConsumerProperties().toMutableMap()
-        configProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
-        configProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = JacksonJsonDeserializer::class.java
-        configProps.putIfAbsent(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
-
-        val valueDeserializer = JacksonJsonDeserializer(Event::class.java).apply {
-            addTrustedPackages("*")
-        }
-
-        return DefaultKafkaConsumerFactory(
-            configProps, StringDeserializer(), valueDeserializer
-        )
-    }
-
-    @Bean
     fun kafkaTemplate(): KafkaTemplate<String, Event> {
-        val producerProps = kafkaProperties.buildProducerProperties().toMutableMap()
-        producerProps[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        producerProps.remove(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)
-        return KafkaTemplate(
-            DefaultKafkaProducerFactory(
-                producerProps,
-                StringSerializer(),
-                JacksonJsonSerializer<Event>()
-            )
-        )
-    }
-
-    @Bean
-    fun kafkaListenerContainerFactory(
-        consumerFactory: ConsumerFactory<String, Event>
-    ): ConcurrentKafkaListenerContainerFactory<String, Event> {
-        val factory = ConcurrentKafkaListenerContainerFactory<String, Event>()
-        factory.setConsumerFactory(consumerFactory)
-        factory.containerProperties.ackMode = ContainerProperties.AckMode.RECORD
-        return factory
+        return KafkaTemplate(DefaultKafkaProducerFactory(kafkaProperties.buildProducerProperties()))
     }
 }
