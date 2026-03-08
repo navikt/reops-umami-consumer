@@ -3,6 +3,7 @@ package no.nav.reops.umami
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.nav.reops.event.Event
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.springframework.http.HttpStatusCode
@@ -18,7 +19,7 @@ class UmamiServiceTest {
     @ParameterizedTest(name = "status={0} => success={1}, failure={2}")
     @CsvSource(
         "200, 1.0, 0.0",
-        "300, 1.0, 0.0",
+        "300, 0.0, 1.0",
         "400, 0.0, 1.0",
         "500, 0.0, 1.0",
     )
@@ -44,7 +45,13 @@ class UmamiServiceTest {
             )
         )
 
-        service.sendEvent(event = event, userAgent = userAgent, forwardedFor = forwardedFor)
+        if (status == 200) {
+            service.sendEvent(event = event, userAgent = userAgent, forwardedFor = forwardedFor)
+        } else {
+            assertThrows<Exception> {
+                service.sendEvent(event = event, userAgent = userAgent, forwardedFor = forwardedFor)
+            }
+        }
 
         assertEquals(expectedSuccess, successCounter(registry))
         assertEquals(expectedFailure, failureCounter(registry))
