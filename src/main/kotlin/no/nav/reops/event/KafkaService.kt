@@ -74,16 +74,14 @@ class KafkaService(
     }
 
     @DltHandler
-    fun handleDlt(
-        event: Event,
-        @Header(KafkaHeaders.RECEIVED_KEY, required = false) key: String?,
-        record: ConsumerRecord<String, Event>
-    ) {
+    fun handleDlt(record: ConsumerRecord<String, Event>) {
         try {
             kafkaEventsDlt.increment()
+            val key = record.key()
+            val website = runCatching { record.value()?.payload?.website }.getOrNull()
             LOG.error(
-                "Message exhausted all retries and sent to DLT: key={} website={} offset={} partition={}",
-                key, event.payload.website, record.offset(), record.partition()
+                "Message exhausted all retries and sent to DLT: key={} website={} offset={} partition={} topic={}",
+                key, website, record.offset(), record.partition(), record.topic()
             )
         } catch (ex: Exception) {
             LOG.error("Error in DLT handler for offset={} partition={}", record.offset(), record.partition(), ex)
