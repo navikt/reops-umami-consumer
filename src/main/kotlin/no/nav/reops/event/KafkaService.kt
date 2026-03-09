@@ -34,7 +34,7 @@ class KafkaService(
 
     @RetryableTopic(
         attempts = "2", // Dont change! - creates more topics
-        backOff = BackOff(delay = 300_000), // Dont add more backoff! - creates more topics
+        backOff = BackOff(delayString = "\${spring.kafka.retry.backoff-delay:300000}"), // Dont add more backoff! - creates more topics
         sameIntervalTopicReuseStrategy = SameIntervalTopicReuseStrategy.SINGLE_TOPIC,
         autoCreateTopics = "false"
     )
@@ -75,17 +75,13 @@ class KafkaService(
 
     @DltHandler
     fun handleDlt(record: ConsumerRecord<String, Event>) {
-        try {
-            kafkaEventsDlt.increment()
-            val key = record.key()
-            val website = runCatching { record.value()?.payload?.website }.getOrNull()
-            LOG.error(
-                "Message exhausted all retries and sent to DLT: key={} website={} offset={} partition={} topic={}",
-                key, website, record.offset(), record.partition(), record.topic()
-            )
-        } catch (ex: Exception) {
-            LOG.error("Error in DLT handler for offset={} partition={}", record.offset(), record.partition(), ex)
-        }
+        kafkaEventsDlt.increment()
+        val key = record.key()
+        val website = runCatching { record.value()?.payload?.website }.getOrNull()
+        LOG.error(
+            "Message exhausted all retries and sent to DLT: key={} website={} offset={} partition={} topic={}",
+            key, website, record.offset(), record.partition(), record.topic()
+        )
     }
 
     private companion object {

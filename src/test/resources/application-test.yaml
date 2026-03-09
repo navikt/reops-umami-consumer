@@ -4,6 +4,8 @@ spring:
   kafka:
     topic: test-topic
     bootstrap-servers: ${spring.embedded.kafka.brokers}
+    retry:
+      backoff-delay: 1000
     consumer:
       group-id: test-group
 

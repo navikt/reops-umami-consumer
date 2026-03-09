@@ -4,6 +4,8 @@ spring:
     topic: test2
     properties:
       security.protocol: PLAINTEXT
+    retry:
+      backoff-delay: 1000
 server:
   port: 8084
 
