@@ -32,14 +32,14 @@ spec:
   accessPolicy:
     outbound:
       rules:
-        - application: umami-dev
+        - application: reops-umami-beta
       external:
         - host: nav-prod-kafka-nav-prod.aivencloud.com
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: kubernetes
     - name: REOPS_UMAMI_URL
-      value: umami-dev.team-researchops.svc.cluster.local
+      value: reops-umami-beta.team-researchops.svc.cluster.local
     - name: JAVA_TOOL_OPTIONS
       value: >-
         -XX:+UseZGC
