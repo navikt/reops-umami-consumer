@@ -1,5 +1,6 @@
 package no.nav.reops
 
+import no.nav.reops.event.Event
 import org.springframework.aot.hint.MemberCategory
 import org.springframework.aot.hint.RuntimeHintsRegistrar
 import org.springframework.aot.hint.RuntimeHints
@@ -14,10 +15,49 @@ class NativeHintsRegistrar : RuntimeHintsRegistrar {
     override fun registerHints(hints: RuntimeHints, classLoader: ClassLoader?) {
         val reflection = hints.reflection()
 
+        // Register all data classes used for Jackson serialization/deserialization
+        listOf(
+            Event::class.java,
+            Event.Payload::class.java,
+            ErrorResponse::class.java,
+        ).forEach { clazz ->
+            reflection.registerType(
+                clazz,
+                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+                MemberCategory.INVOKE_DECLARED_METHODS,
+                MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+                MemberCategory.INVOKE_PUBLIC_METHODS,
+                MemberCategory.ACCESS_DECLARED_FIELDS,
+                MemberCategory.ACCESS_PUBLIC_FIELDS,
+            )
+        }
+
+        // jackson-module-kotlin 3.x reflectively accesses the static INSTANCE field
+        // on Kotlin object / companion object classes. Register all Kotlin-generated
+        // companion classes whose enclosing data classes are serialised by Jackson.
+        listOf(
+            "no.nav.reops.event.Event\$Companion",
+            "no.nav.reops.event.Event\$Payload\$Companion",
+        ).forEach { className ->
+            val resolvedClass = classLoader?.let { runCatching { Class.forName(className, false, it) }.getOrNull() }
+            if (resolvedClass != null) {
+                reflection.registerType(
+                    resolvedClass,
+                    MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+                    MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+                    MemberCategory.INVOKE_DECLARED_METHODS,
+                    MemberCategory.INVOKE_PUBLIC_METHODS,
+                    MemberCategory.ACCESS_DECLARED_FIELDS,
+                    MemberCategory.ACCESS_PUBLIC_FIELDS,
+                )
+                runCatching { resolvedClass.getDeclaredField("INSTANCE") }.getOrNull()?.let { field ->
+                    reflection.registerField(field)
+                }
+            }
+        }
+
         // Register LZ4 / XXHash classes used by Kafka (loaded via reflection).
-        // The at.yawk.lz4 fork doesn't ship GraalVM reachability metadata and
-        // the GraalVM reachability-metadata repo has no entries for it either,
-        // so we must register these manually.
+        // Kafka accesses the static INSTANCE field reflectively, so we register the field explicitly.
         listOf(
             "net.jpountz.lz4.LZ4Factory",
             "net.jpountz.xxhash.XXHashFactory",
