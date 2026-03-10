@@ -11,12 +11,12 @@ spec:
       rules:
         - alert: EventErrorRateHigh
           expr: |
-            sum(kafka_events_processed_total{namespace="team-researchops", app="reops-umami-consumer", result="failure"}) > 0
+            sum(kafka_events_processed_total{namespace="team-researchops", app="reops-umami-consumer", result="failure"}) > 10
           for: 5m
           annotations:
-            summary: "TEST: High error rate for reops-umami-consumer"
-            consequence: "TEST: Consumer is unable to send events to umami."
-            message: "TEST: reops-umami-consumer has {{ $value }} failed events over the last 5 minutes."
+            summary: "High error rate for reops-umami-consumer"
+            consequence: "Consumer is unable to send events to umami."
+            message: "reops-umami-consumer has {{ $value }} failed events over the last 5 minutes."
             dashboard_url: "https://grafana.nav.cloud.nais.io/d/reops-event-tracking/reops-event-tracking-proxy-2b-consumer"
           labels:
             severity: warning
