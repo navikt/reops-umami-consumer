@@ -1,6 +1,8 @@
 package no.nav.reops
 
 import no.nav.reops.event.Event
+import no.nav.reops.event.KafkaService
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.springframework.aot.hint.MemberCategory
 import org.springframework.aot.hint.RuntimeHintsRegistrar
 import org.springframework.aot.hint.RuntimeHints
@@ -55,6 +57,12 @@ class NativeHintsRegistrar : RuntimeHintsRegistrar {
                 }
             }
         }
+
+        // Register @DltHandler method invoked reflectively by Spring Kafka
+        reflection.registerMethod(
+            KafkaService::class.java.getMethod("handleDlt", ConsumerRecord::class.java),
+            org.springframework.aot.hint.ExecutableMode.INVOKE
+        )
 
         // Register LZ4 / XXHash classes used by Kafka (loaded via reflection).
         // Kafka accesses the static INSTANCE field reflectively, so we register the field explicitly.
