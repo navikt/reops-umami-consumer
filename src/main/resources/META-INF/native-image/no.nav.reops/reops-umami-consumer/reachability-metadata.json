@@ -1,0 +1,16 @@
+{
+  "reflection": [
+    {
+      "type": "no.nav.reops.event.KafkaService",
+      "methods": [
+        {
+          "name": "handleDlt",
+          "parameterTypes": [
+            "org.apache.kafka.clients.consumer.ConsumerRecord"
+          ]
+        }
+      ]
+    }
+  ]
+}
+
