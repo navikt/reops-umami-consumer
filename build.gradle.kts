@@ -50,7 +50,7 @@ dependencies {
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:6.2.3")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.2.0")
+	testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.2.1")
 }
 
 kotlin {
