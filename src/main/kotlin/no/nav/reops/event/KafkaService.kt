@@ -16,7 +16,6 @@ import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 
 const val USER_AGENT = "user-agent"
-const val EXCLUDE_FILTERS = "x-exclude-filters"
 const val FORWARDED_FOR = "x-forwarded-for"
 
 @Service
@@ -46,13 +45,12 @@ class KafkaService(
         event: Event,
         @Header(KafkaHeaders.RECEIVED_KEY) key: String,
         @Header(name = USER_AGENT, required = false) userAgent: String?,
-        @Header(name = EXCLUDE_FILTERS, required = false) excludeFilters: String?,
         @Header(name = FORWARDED_FOR, required = false) forwardedFor: String?,
         record: ConsumerRecord<String, Event>
     ) {
         try {
             LOG.info("Received event with key={} website={} offset={} partition={}", key, event.payload.website, record.offset(), record.partition())
-            val filteredEvent = filterService.filterEvent(event, excludeFilters)
+            val filteredEvent = filterService.filterEvent(event)
 
             val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"
             val safeForwardedFor = forwardedFor?.trim().takeUnless { it.isNullOrEmpty() }

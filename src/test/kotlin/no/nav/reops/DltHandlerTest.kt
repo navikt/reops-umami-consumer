@@ -3,7 +3,6 @@ package no.nav.reops
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import io.micrometer.core.instrument.MeterRegistry
-import no.nav.reops.event.EXCLUDE_FILTERS
 import no.nav.reops.event.Event
 import no.nav.reops.event.FORWARDED_FOR
 import no.nav.reops.event.USER_AGENT
@@ -78,7 +77,6 @@ class DltHandlerTest {
             .setHeader(KafkaHeaders.TOPIC, "test-topic")
             .setHeader(KafkaHeaders.KEY, "dlt-test-key")
             .setHeader(USER_AGENT, "test-agent")
-            .setHeader(EXCLUDE_FILTERS, "")
             .setHeader(FORWARDED_FOR, "127.0.0.1")
             .build()
 

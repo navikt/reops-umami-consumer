@@ -2,7 +2,6 @@ package no.nav.reops
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import no.nav.reops.event.EXCLUDE_FILTERS
 import no.nav.reops.event.Event
 import no.nav.reops.event.FORWARDED_FOR
 import no.nav.reops.event.USER_AGENT
@@ -79,7 +78,7 @@ class EndeTilEndeTest {
         )
 
         val message = MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "test-topic")
-            .setHeader(KafkaHeaders.KEY, "event-key").setHeader(USER_AGENT, "test-agent").setHeader(EXCLUDE_FILTERS, "")
+            .setHeader(KafkaHeaders.KEY, "event-key").setHeader(USER_AGENT, "test-agent")
             .setHeader(FORWARDED_FOR, "127.0.0.1").build()
 
         kafkaTemplate.send(message)
@@ -122,7 +121,7 @@ class EndeTilEndeTest {
         )
 
         val message = MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "test-topic")
-            .setHeader(KafkaHeaders.KEY, "event-key").setHeader(USER_AGENT, "test-agent").setHeader(EXCLUDE_FILTERS, "")
+            .setHeader(KafkaHeaders.KEY, "event-key").setHeader(USER_AGENT, "test-agent")
             .setHeader(FORWARDED_FOR, "127.0.0.1").build()
 
         kafkaTemplate.send(message)

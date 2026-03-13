@@ -5,7 +5,6 @@ import no.nav.reops.event.Event
 import org.springframework.stereotype.Service
 import io.micrometer.core.instrument.Counter
 import org.slf4j.LoggerFactory
-import kotlin.collections.plus
 
 @Service
 class FilterService(meterRegistry: MeterRegistry) {
@@ -14,8 +13,8 @@ class FilterService(meterRegistry: MeterRegistry) {
     private val urlPolicy: UrlPolicy = DefaultPolicies.urlPolicy()
     private val redactor = Redactor(rules)
 
-    fun filterEvent(event: Event, excludeFilters: String? = null): Event {
-        val excludeKeys = DefaultPolicies.findExcludeKeys(excludeFilters)
+    fun filterEvent(event: Event): Event {
+        val excludeKeys = DefaultPolicies.defaultFilter
         LOG.debug("Exclude filters for this event: {}", excludeKeys)
 
         val p = event.payload
@@ -104,17 +103,6 @@ internal object DefaultPolicies {
         "yrkestittel",
         "tlbhrNavn",
     )
-
-    fun findExcludeKeys(excludeFilters: String?): Set<String> {
-        return if (excludeFilters == null) {
-            defaultFilter
-        } else {
-            parse(excludeFilters) + defaultFilter
-        }
-    }
-
-    fun parse(headerValue: String?): Set<String> =
-        headerValue?.split(',')?.asSequence()?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
 }
 
 internal data class RedactionRule(
