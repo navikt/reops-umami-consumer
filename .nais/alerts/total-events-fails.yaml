@@ -11,7 +11,7 @@ spec:
       rules:
         - alert: EventErrorRateHigh
           expr: |
-            sum(increase(kafka_events_processed_total{namespace="team-researchops", app="reops-umami-consumer", result="failure"}[5m])) > 10
+            sum(increase(kafka_events_processed_total{namespace="team-researchops", app="reops-umami-consumer", result="failure"}[5m])) > 100
           for: 5m
           annotations:
             summary: "High error rate for reops-umami-consumer"
