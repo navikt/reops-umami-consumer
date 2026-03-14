@@ -62,5 +62,15 @@ class FilterServiceEmailVariantsTest {
     fun `redacts email after hash delimiter`() {
         assertEquals("email#[PROXY-EMAIL]", redact("email#user@example.com"))
     }
+
+    @Test
+    fun `redacts mailto email link completely`() {
+        assertEquals("[PROXY-EMAIL]", redact("mailto:kake.bake.smake@nav.no"))
+    }
+
+    @Test
+    fun `redacts mailto email with surrounding text`() {
+        assertEquals("Contact: [PROXY-EMAIL] for info", redact("Contact: mailto:user@example.com for info"))
+    }
 }
 

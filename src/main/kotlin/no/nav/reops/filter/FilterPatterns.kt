@@ -5,7 +5,7 @@ internal object FilterPatterns {
 
     val FNR_REGEX = Regex("(?<!\\d)\\d{11}(?!\\d)")
     val NAVIDENT_REGEX = Regex("(?<![a-zA-Z0-9])[a-zA-Z]\\d{6}(?!\\d)")
-    val EMAIL_REGEX = Regex("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
+    val EMAIL_REGEX = Regex("(?:mailto:)?[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
     val IP_REGEX = Regex("(?<!\\d)\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?!\\d)")
     val PHONE_REGEX = Regex("(?<!\\d)[2-9]\\d{7}(?!\\d)")
 
