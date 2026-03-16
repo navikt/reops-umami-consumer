@@ -64,9 +64,9 @@ class FilterServiceOrgNumberVariantsTest {
     }
 
     @Test
-    fun `preserves uuid that contains org-number-like suffix`() {
+    fun `redacts uuid that contains org-number-like suffix`() {
         val input = "AD748BD6-484B-416C-B444-aaa123456789"
-        assertEquals(input, redact(input))
+        assertEquals("[PROXY-UUID]", redact(input))
     }
 }
 

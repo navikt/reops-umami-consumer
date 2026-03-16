@@ -9,7 +9,7 @@ class FilterServiceSanctioningTest {
     private fun filterService(): FilterService = FilterService(SimpleMeterRegistry())
 
     @Test
-    fun `filepath exclusion preserves behandling path with uuid`() {
+    fun `filepath exclusion redacts uuid in behandling path`() {
         val service = filterService()
         val base = TestEventFactory.minimalEvent()
         val input = "/behandling/__a50e8400-e29b-41d4-a716-a4665544000a/brev"
@@ -17,13 +17,12 @@ class FilterServiceSanctioningTest {
             type = "event",
             payload = base.payload.copy(url = input)
         )
-        // Top-level url has filepath exclusion via urlPolicy
         val out = service.filterEvent(event)
-        assertEquals(input, out.payload.url)
+        assertEquals("/behandling/__[PROXY-UUID]/brev", out.payload.url)
     }
 
     @Test
-    fun `filepath exclusion preserves arbeidsplassen url with uuid`() {
+    fun `filepath exclusion redacts uuid in arbeidsplassen url`() {
         val service = filterService()
         val base = TestEventFactory.minimalEvent()
         val input = "https://arbeidsplassen.nav.no/stillinger/stilling/fabaa3cc-90e7-4c00-88aa-ab8d2f9831e8"
@@ -32,7 +31,7 @@ class FilterServiceSanctioningTest {
             payload = base.payload.copy(url = input)
         )
         val out = service.filterEvent(event)
-        assertEquals(input, out.payload.url)
+        assertEquals("https://arbeidsplassen.nav.no/stillinger/stilling/[PROXY-UUID]", out.payload.url)
     }
 }
 

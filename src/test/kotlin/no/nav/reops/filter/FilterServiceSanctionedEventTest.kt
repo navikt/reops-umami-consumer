@@ -27,6 +27,11 @@ class FilterServiceSanctionedEventTest {
         )
 
         val out = service.filterEvent(event)
-        assertEquals(event, out)
+        val expected = event.copy(
+            payload = event.payload.copy(
+                url = "https://arbeidsplassen.nav.no/stillinger/stilling/[PROXY-UUID]"
+            )
+        )
+        assertEquals(expected, out)
     }
 }

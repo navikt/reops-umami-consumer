@@ -25,7 +25,7 @@ class FilterServiceRedactionRulesTest {
     }
 
     @Test
-    fun `filterEvent preserves allowed values in data`() {
+    fun `filterEvent redacts uuid and preserves other allowed values in data`() {
         val service = filterService()
 
         val keep = "nav123456 test654321"
@@ -39,7 +39,8 @@ class FilterServiceRedactionRulesTest {
         val out = service.filterEvent(event)
         val outText = out.payload.data!!.get("text").asString()
 
-        assertTrue(outText.contains(uuid))
+        assertFalse(outText.contains(uuid))
+        assertTrue(outText.contains("[PROXY-UUID]"))
         assertTrue(outText.contains("url1="))
         assertTrue(outText.contains("https://example.com/path"))
         assertTrue(outText.contains("[PROXY-SEARCH]"))
@@ -130,7 +131,7 @@ class FilterServiceRedactionRulesTest {
                 data = TestEventFactory.jsonNode(
                     mapOf(
                         "user_email" to "[PROXY-EMAIL]",
-                        "user_id" to "550e8400-e29b-41d4-a716-446655440000",
+                        "user_id" to "[PROXY-UUID]",
                         "ssn" to "[PROXY-FNR]",
                         "phone" to "[PROXY-PHONE]",
                         "event_properties" to mapOf(
@@ -213,7 +214,7 @@ class FilterServiceRedactionRulesTest {
                         "api_key" to "abc123",
                         "device_id" to "device-123",
                         "user_email" to "[PROXY-EMAIL]",
-                        "user_id" to "550e8400-e29b-41d4-a716-446655440000",
+                        "user_id" to "[PROXY-UUID]",
                         "user_ssn" to "[PROXY-FNR]",
                         "phone" to "[PROXY-PHONE]",
                         "navident" to "[PROXY-NAVIDENT]",
@@ -232,7 +233,7 @@ class FilterServiceRedactionRulesTest {
                         "file_path" to "[PROXY-FILEPATH]",
                         "name" to "[PROXY-NAME]",
                         "address" to "[PROXY-ADDRESS]",
-                        "uuid" to "550e8400-e29b-41d4-a716-446655440000",
+                        "uuid" to "[PROXY-UUID]",
                         "website_url" to "https://example.com/page",
                         "event_properties" to mapOf(
                             "card_number" to "1234 5678 9012 3456", "regular_text" to "This is fine"
@@ -350,5 +351,57 @@ class FilterServiceRedactionRulesTest {
         assertEquals("Ola Nordmann", data.get("innholdstype").asString())
         assertEquals("Ola Nordmann", data.get("yrkestittel").asString())
         assertEquals("Ola Nordmann", data.get("tlbhrNavn").asString())
+    }
+
+    @Test
+    fun `filterEvent redacts uuid on all fields except website`() {
+        val service = filterService()
+        val websiteId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+        val uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+        val base = TestEventFactory.minimalEvent()
+        val event = base.copy(
+            type = "event", payload = base.payload.copy(
+                website = websiteId,
+                id = uuid,
+                hostname = uuid,
+                screen = uuid,
+                language = uuid,
+                title = uuid,
+                url = "https://example.com/page/$uuid",
+                referrer = "https://example.com/ref/$uuid",
+                name = uuid,
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "some_field" to uuid,
+                        "nested" to mapOf("deep" to uuid),
+                        "website" to uuid
+                    )
+                )
+            )
+        )
+
+        val out = service.filterEvent(event)
+
+        // website field is preserved as-is (UUID type, not redacted)
+        assertEquals(websiteId, out.payload.website)
+
+        // all other top-level string fields have the uuid redacted
+        assertEquals("[PROXY-UUID]", out.payload.id)
+        assertEquals("[PROXY-UUID]", out.payload.hostname)
+        assertEquals("[PROXY-UUID]", out.payload.screen)
+        assertEquals("[PROXY-UUID]", out.payload.language)
+        assertEquals("[PROXY-UUID]", out.payload.title)
+        assertEquals("https://example.com/page/[PROXY-UUID]", out.payload.url)
+        assertEquals("https://example.com/ref/[PROXY-UUID]", out.payload.referrer)
+        assertEquals("[PROXY-UUID]", out.payload.name)
+
+        // uuid inside data fields is redacted
+        val data = out.payload.data!!
+        assertEquals("[PROXY-UUID]", data.get("some_field").asString())
+        assertEquals("[PROXY-UUID]", data.get("nested").get("deep").asString())
+
+        // "website" key in data is preserved (via KeyPolicy preservedKeys)
+        assertEquals(uuid, data.get("website").asString())
     }
 }

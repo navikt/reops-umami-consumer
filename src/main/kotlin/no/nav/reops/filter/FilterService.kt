@@ -112,6 +112,7 @@ internal data class RedactionRule(
 internal object RuleSetFactory {
     fun create(meterRegistry: MeterRegistry): List<RedactionRule> = listOf(
         keepRule(meterRegistry),
+        rule("uuid", "PROXY-UUID", FilterPatterns.UUID_REGEX, meterRegistry),
         rule("filepath", "PROXY-FILEPATH", FilterPatterns.FILEPATH_REGEX, meterRegistry),
         rule("fnr", "PROXY-FNR", FilterPatterns.FNR_REGEX, meterRegistry),
         rule("navident", "PROXY-NAVIDENT", FilterPatterns.NAVIDENT_REGEX, meterRegistry),

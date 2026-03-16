@@ -97,7 +97,7 @@ class FilterServiceStructuralTransformsTest {
                         "name" to "[PROXY-NAME]",
                         "address" to "[PROXY-ADDRESS]",
 
-                        "uuid" to "550e8400-e29b-41d4-a716-446655440000",
+                        "uuid" to "[PROXY-UUID]",
                         "website_url" to "https://example.com/page",
 
                         "event_properties" to mapOf(

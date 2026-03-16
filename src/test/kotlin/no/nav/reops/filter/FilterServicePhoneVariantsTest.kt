@@ -19,15 +19,15 @@ class FilterServicePhoneVariantsTest {
     }
 
     @Test
-    fun `preserves uuid containing phone-like start`() {
+    fun `redacts uuid containing phone-like start`() {
         val input = "Do not call me at AD748BD6-484B-416C-B444-84EE98765432 that's not a phone number, but a UUID"
-        assertEquals(input, redact(input))
+        assertEquals("Do not call me at [PROXY-UUID] that's not a phone number, but a UUID", redact(input))
     }
 
     @Test
-    fun `preserves uuid starting with phone-like digits`() {
+    fun `redacts uuid starting with phone-like digits`() {
         val input = "Nor should you call me at 98765432-484B-416C-B444-84EE98765432 that's also not a phone number, still a UUID"
-        assertEquals(input, redact(input))
+        assertEquals("Nor should you call me at [PROXY-UUID] that's also not a phone number, still a UUID", redact(input))
     }
 
     @Test

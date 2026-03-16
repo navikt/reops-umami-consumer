@@ -8,17 +8,13 @@ internal class Redactor(
     ): String {
         var result = input
 
-        // 1) Preserve UUIDs
-        val preservedUuids = PlaceholderStore(prefix = "__PRESERVED_UUID_", suffix = "__")
-        result = preservedUuids.preserveAll(result, FilterPatterns.UUID_REGEX)
-
-        // 2) Optionally preserve URL-like substrings in free-text
+        // 1) Optionally preserve URL-like substrings in free-text
         val preservedUrls = PlaceholderStore(prefix = "__PRESERVED_URL_", suffix = "__")
         if (preserveUrls) {
             result = preservedUrls.preserveAll(result, FilterPatterns.URL_REGEX)
         }
 
-        // 3) Apply rules (same order, same checks)
+        // 2) Apply rules (same order, same checks)
         for (rule in rules) {
             if (rule.label in excludedLabels) continue
             if (!rule.regex.containsMatchIn(result)) continue
@@ -30,11 +26,9 @@ internal class Redactor(
             }
         }
 
-        // 4) Restore URLs
+        // 3) Restore URLs
         result = preservedUrls.restoreAll(result)
 
-        // 5) Restore UUIDs
-        result = preservedUuids.restoreAll(result)
 
         return result
     }

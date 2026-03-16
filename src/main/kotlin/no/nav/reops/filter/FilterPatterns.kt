@@ -32,7 +32,7 @@ internal object FilterPatterns {
     val LICENSE_PLATE_REGEX = Regex("(?<![a-zA-Z])[A-Z]{2}\\s?\\d{5}(?!\\d)")
     val SEARCH_REGEX = Regex("[?&](?:q|query|search|k|ord)=[^&\\s]+")
 
-    val UUID_REGEX = Regex("(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b")
+    val UUID_REGEX = Regex("(?i)(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-f])")
 
     // Used only to preserve URL-like substrings in free-text (not for payload.url/referrer).
     // IMPORTANT: Preserve only path-part (up to ? or #). Query strings/fragments may contain PII.

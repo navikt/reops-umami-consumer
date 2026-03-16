@@ -22,7 +22,7 @@ Event
 | `FilterService` | Composition root. Wires everything together and applies policies to an event.        |
 | `KeyPolicy`     | Key-based business rules: drop fields, preserve trusted values, force anonymization. |
 | `UrlPolicy`     | Defines what is a URL field and how URLs are sanitized (path vs query).              |
-| `Redactor`      | Applies regex rules and preservation/restoration (UUID + URL-like substrings).       |
+| `Redactor`      | Applies regex rules and preservation/restoration (URL-like substrings).              |
 | `Traverser`     | Walks nested data structures and delegates decisions to the policies.                |
 
 Responsibilities are isolated:
@@ -125,21 +125,22 @@ Query strings are treated as user input and are fully sanitized.
 
 These rules apply to all string values unless explicitly excluded (e.g. URL path-part excludes `PROXY-FILEPATH`).
 
-| Rule                | Label                  | Detects                      | Output                   |
-|---------------------|------------------------|------------------------------|--------------------------|
-| File path           | `PROXY-FILEPATH`       | Filesystem paths             | `[PROXY-FILEPATH]`       |
-| National ID (FNR)   | `PROXY-FNR`            | 11-digit Norwegian IDs       | `[PROXY-FNR]`            |
-| NAV ident           | `PROXY-NAVIDENT`       | `X123456` format             | `[PROXY-NAVIDENT]`       |
-| Email               | `PROXY-EMAIL`          | Email addresses              | `[PROXY-EMAIL]`          |
-| IP address          | `PROXY-IP`             | IPv4 strings                 | `[PROXY-IP]`             |
-| Phone               | `PROXY-PHONE`          | 8-digit numbers              | `[PROXY-PHONE]`          |
-| Name                | `PROXY-NAME`           | Full-name patterns (space or dot separated) | `[PROXY-NAME]`           |
-| Address             | `PROXY-ADDRESS`        | Postal address-like patterns | `[PROXY-ADDRESS]`        |
-| Secret address      | `PROXY-SECRET-ADDRESS` | “hemmelig adresse”           | `[PROXY-SECRET-ADDRESS]` |
-| Account number      | `PROXY-ACCOUNT`        | `1234.56.78901` format       | `[PROXY-ACCOUNT]`        |
-| Organization number | `PROXY-ORG-NUMBER`     | 9 digits                     | `[PROXY-ORG-NUMBER]`     |
-| License plate       | `PROXY-LICENSE-PLATE`  | `AB12345` format             | `[PROXY-LICENSE-PLATE]`  |
-| Search query        | `PROXY-SEARCH`         | `?q=`, `?search=` etc        | `[PROXY-SEARCH]`         |
+| Rule                | Label                  | Detects                                        | Output                   |
+|---------------------|------------------------|------------------------------------------------|--------------------------|
+| UUID                | `PROXY-UUID`           | UUIDs (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`) | `[PROXY-UUID]`           |
+| File path           | `PROXY-FILEPATH`       | Filesystem paths                               | `[PROXY-FILEPATH]`       |
+| National ID (FNR)   | `PROXY-FNR`            | 11-digit Norwegian IDs                         | `[PROXY-FNR]`            |
+| NAV ident           | `PROXY-NAVIDENT`       | `X123456` format                               | `[PROXY-NAVIDENT]`       |
+| Email               | `PROXY-EMAIL`          | Email addresses                                | `[PROXY-EMAIL]`          |
+| IP address          | `PROXY-IP`             | IPv4 strings                                   | `[PROXY-IP]`             |
+| Phone               | `PROXY-PHONE`          | 8-digit numbers                                | `[PROXY-PHONE]`          |
+| Name                | `PROXY-NAME`           | Full-name patterns (space or dot separated)    | `[PROXY-NAME]`           |
+| Address             | `PROXY-ADDRESS`        | Postal address-like patterns                   | `[PROXY-ADDRESS]`        |
+| Secret address      | `PROXY-SECRET-ADDRESS` | “hemmelig adresse”                             | `[PROXY-SECRET-ADDRESS]` |
+| Account number      | `PROXY-ACCOUNT`        | `1234.56.78901` format                         | `[PROXY-ACCOUNT]`        |
+| Organization number | `PROXY-ORG-NUMBER`     | 9 digits                                       | `[PROXY-ORG-NUMBER]`     |
+| License plate       | `PROXY-LICENSE-PLATE`  | `AB12345` format                               | `[PROXY-LICENSE-PLATE]`  |
+| Search query        | `PROXY-SEARCH`         | `?q=`, `?search=` etc                          | `[PROXY-SEARCH]`         |
 
 ---
 
@@ -150,13 +151,15 @@ then restored unchanged after rule application.
 
 | Pattern                              | Reason                                                                                            |
 |--------------------------------------|---------------------------------------------------------------------------------------------------|
-| UUIDs                                | Prevent partial regex matches                                                                     |
 | URL-like substrings (free-text only) | Avoid redacting legitimate routing/link text inside normal strings (not `payload.url`/`referrer`) |
 | `nav123456`, `test654321`            | Explicitly allowed identifiers (matched by a "keep" rule and not replaced)                        |
 
 Notes:
+- UUIDs are **redacted** (`[PROXY-UUID]`) on all fields. The only exception is the `payload.website` field
+  (a typed `UUID`, passed through without redaction) and the `website` key inside `payload.data`
+  (structurally preserved via `KeyPolicy`).
 - URL-like preservation is **not** used for strict URL fields; URLs are redacted via `UrlPolicy` split (path vs query).
-- The "keep" identifiers are detected so other redaction rules don’t accidentally proxy them.
+- The "keep" identifiers are detected so other redaction rules don't accidentally proxy them.
 
 ---
 
@@ -217,4 +220,3 @@ in `FilterService.kt`.
 Most changes should touch exactly one file.
 It acts as a deterministic and auditable privacy firewall.
 ---
-

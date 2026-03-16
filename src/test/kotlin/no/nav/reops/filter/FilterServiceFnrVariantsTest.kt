@@ -84,9 +84,9 @@ class FilterServiceFnrVariantsTest {
     }
 
     @Test
-    fun `preserves uuid that contains fnr-like suffix`() {
+    fun `redacts uuid that contains fnr-like suffix`() {
         val input = "AD748BD6-484B-416C-B444-a12345678901"
-        assertEquals(input, redact(input))
+        assertEquals("[PROXY-UUID]", redact(input))
     }
 }
 
