@@ -6,6 +6,7 @@ spring:
     topic: test2
     listener:
       ack-mode: record
+      concurrency: 4
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
@@ -19,7 +20,7 @@ spring:
         spring.json.value.default.type: no.nav.reops.event.Event
         spring.json.trusted.packages: "*"
         max.poll.records: 500
-        max.poll.interval.ms: 300000
+        max.poll.interval.ms: 350000
         fetch.max.bytes: 1048576  # 1 MB
         fetch.min.bytes: 1
         fetch.max.wait.ms: 100

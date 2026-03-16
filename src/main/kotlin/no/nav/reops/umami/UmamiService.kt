@@ -42,7 +42,7 @@ class UmamiService(
                 umamiRequestsFailure.increment()
                 LOG.error("Failed to send event to Umami", ex)
             }
-            .block()
+            .block(Duration.ofSeconds(10))
     }
 
     private companion object {

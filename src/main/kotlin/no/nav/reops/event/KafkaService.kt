@@ -35,11 +35,13 @@ class KafkaService(
         attempts = "2", // Dont change! - creates more topics
         backOff = BackOff(delayString = "\${spring.kafka.retry.backoff-delay:300000}"), // Dont add more backoff! - creates more topics
         sameIntervalTopicReuseStrategy = SameIntervalTopicReuseStrategy.SINGLE_TOPIC,
-        autoCreateTopics = "false"
+        autoCreateTopics = "false",
+        concurrency = "1"
     )
     @KafkaListener(
         topics = ["\${spring.kafka.topic}"],
-        groupId = "\${spring.kafka.consumer.group-id}"
+        groupId = "\${spring.kafka.consumer.group-id}",
+        concurrency = "\${spring.kafka.listener.concurrency}",
     )
     fun eventListen(
         event: Event,
