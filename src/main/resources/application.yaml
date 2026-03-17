@@ -6,7 +6,7 @@ spring:
     topic: test2
     listener:
       ack-mode: record
-      concurrency: 4
+      concurrency: 8
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
