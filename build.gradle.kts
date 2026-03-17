@@ -89,8 +89,8 @@ graalvmNative {
 			// Strip debug symbols from the binary
 			"-H:-IncludeMethodData",
 
-			// Optimize for size over peak throughput
-			"-Os",
+			// Optimize for peak throughput
+			"-O2",
 		)
 
 		if (System.getenv("CI").toBoolean()) {

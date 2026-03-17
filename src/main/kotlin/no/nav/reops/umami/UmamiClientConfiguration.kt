@@ -17,12 +17,13 @@ class UmamiClientConfiguration(
     @Bean
     fun umamiClient(): WebClient {
         val connectionProvider = ConnectionProvider.builder("umami")
-            .maxConnections(50)
-            .pendingAcquireMaxCount(500)
+            .maxConnections(100)
+            .pendingAcquireMaxCount(1000)
             .pendingAcquireTimeout(Duration.ofSeconds(30))
             .maxIdleTime(Duration.ofSeconds(20))
             .maxLifeTime(Duration.ofSeconds(60))
             .evictInBackground(Duration.ofSeconds(10))
+            .metrics(true)
             .build()
 
         val httpClient = HttpClient.create(connectionProvider)

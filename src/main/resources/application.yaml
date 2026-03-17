@@ -24,6 +24,9 @@ spring:
         fetch.max.bytes: 1048576  # 1 MB
         fetch.min.bytes: 1
         fetch.max.wait.ms: 100
+  threads:
+    virtual:
+      enabled: true
   main:
     banner-mode: off
     web-application-type: reactive
