@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono
 import reactor.netty.http.client.PrematureCloseException
 import reactor.util.retry.Retry
 import java.time.Duration
+import java.util.concurrent.TimeoutException
 
 @Service
 class UmamiService(
@@ -32,9 +33,10 @@ class UmamiService(
                     Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
                 }
             }.toBodilessEntity()
+            .timeout(Duration.ofSeconds(10))
             .retryWhen(
                 Retry.backoff(3, Duration.ofMillis(500))
-                    .filter { it is PrematureCloseException || (it is WebClientRequestException && it.cause is PrematureCloseException) }
+                    .filter { it is PrematureCloseException || (it is WebClientRequestException && it.cause is PrematureCloseException) || it is TimeoutException }
                     .doBeforeRetry { LOG.warn("Retrying after connection error (attempt {})", it.totalRetries() + 1) }
             )
             .doOnSuccess { umamiRequestsSuccess.increment() }
@@ -42,7 +44,7 @@ class UmamiService(
                 umamiRequestsFailure.increment()
                 LOG.error("Failed to send event to Umami", ex)
             }
-            .block(Duration.ofSeconds(10))
+            .block()
     }
 
     private companion object {

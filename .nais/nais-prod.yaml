@@ -15,7 +15,7 @@ spec:
     path: /internal/health
     initialDelay: 5
   replicas:
-    min: 4
+    min: 6
     max: 10
     cpuThresholdPercentage: 50
   prometheus:
