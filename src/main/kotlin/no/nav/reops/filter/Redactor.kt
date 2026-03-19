@@ -1,11 +1,13 @@
 package no.nav.reops.filter
 
 internal class Redactor(
-    private val rules: List<RedactionRule>
+    private val rules: List<RedactionRule>,
+    private val globalExcludedLabels: Set<String> = emptySet()
 ) {
     fun redact(
         input: String, excludedLabels: Set<String> = emptySet(), preserveUrls: Boolean = true
     ): String {
+        val allExcluded = if (globalExcludedLabels.isEmpty()) excludedLabels else globalExcludedLabels + excludedLabels
         var result = input
 
         // 1) Optionally preserve URL-like substrings in free-text
@@ -16,7 +18,7 @@ internal class Redactor(
 
         // 2) Apply rules (same order, same checks)
         for (rule in rules) {
-            if (rule.label in excludedLabels) continue
+            if (rule.label in allExcluded) continue
             if (!rule.regex.containsMatchIn(result)) continue
 
             rule.counter.increment()

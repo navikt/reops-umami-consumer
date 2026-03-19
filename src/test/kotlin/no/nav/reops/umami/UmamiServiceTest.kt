@@ -46,10 +46,10 @@ class UmamiServiceTest {
         )
 
         if (status == 200) {
-            service.sendEvent(event = event, userAgent = userAgent, forwardedFor = forwardedFor)
+            service.sendEvent(event = event, userAgent = userAgent, optOutFilters = null, forwardedFor = forwardedFor)
         } else {
             assertThrows<Exception> {
-                service.sendEvent(event = event, userAgent = userAgent, forwardedFor = forwardedFor)
+                service.sendEvent(event = event, userAgent = userAgent, optOutFilters = null, forwardedFor = forwardedFor)
             }
         }
 

@@ -16,6 +16,7 @@ import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 
 const val USER_AGENT = "user-agent"
+const val OPT_OUT_FILTERS = "x-opt-out-filters"
 const val FORWARDED_FOR = "x-forwarded-for"
 
 @Service
@@ -47,18 +48,21 @@ class KafkaService(
         event: Event,
         @Header(KafkaHeaders.RECEIVED_KEY) key: String,
         @Header(name = USER_AGENT, required = false) userAgent: String?,
+        @Header(name = OPT_OUT_FILTERS, required = false) optOutFilters: String?,
         @Header(name = FORWARDED_FOR, required = false) forwardedFor: String?,
         record: ConsumerRecord<String, Event>
     ) {
         try {
             LOG.info("Received event with key={} website={} offset={} partition={}", key, event.payload.website, record.offset(), record.partition())
-            val filteredEvent = filterService.filterEvent(event)
+            val parsedOptOutFilters = OptOutFilter.parseHeader(optOutFilters)
+            val filteredEvent = filterService.filterEvent(event, parsedOptOutFilters)
 
             val safeUserAgent = userAgent?.trim().takeUnless { it.isNullOrEmpty() } ?: "unknown"
+            val safeOptOutFilters = optOutFilters?.trim().takeUnless { it.isNullOrEmpty() }
             val safeForwardedFor = forwardedFor?.trim().takeUnless { it.isNullOrEmpty() }
             val normalized = filteredEvent.normalizedForUmami()
 
-            umamiService.sendEvent(normalized, safeUserAgent, safeForwardedFor)
+            umamiService.sendEvent(normalized, safeUserAgent, safeOptOutFilters, safeForwardedFor)
             kafkaEventsSuccess.increment()
         } catch (ex: Exception) {
             kafkaEventsFailure.increment()

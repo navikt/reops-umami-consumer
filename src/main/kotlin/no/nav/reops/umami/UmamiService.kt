@@ -24,7 +24,7 @@ class UmamiService(
     private val umamiRequestsSuccess: Counter = meterRegistry.counter("umami_requests_total", "result", "success")
     private val umamiRequestsFailure: Counter = meterRegistry.counter("umami_requests_total", "result", "failure")
 
-    fun sendEvent(event: Event, userAgent: String, forwardedFor: String?) {
+    fun sendEvent(event: Event, userAgent: String, optOutFilters: String?, forwardedFor: String?) {
         umamiClient.post().uri("/api/send").contentType(MediaType.APPLICATION_JSON).header(USER_AGENT, userAgent)
             .apply { if (forwardedFor != null) header(FORWARDED_FOR, forwardedFor) }.bodyValue(event).retrieve()
             .onStatus({ !it.is2xxSuccessful }) { resp ->
@@ -33,7 +33,7 @@ class UmamiService(
                     Mono.error(RuntimeException("Umami error ${resp.statusCode().value()}"))
                 }
             }.toBodilessEntity()
-            .timeout(Duration.ofSeconds(10))
+            .timeout(Duration.ofSeconds(5))
             .retryWhen(
                 Retry.backoff(3, Duration.ofMillis(500))
                     .filter { it is PrematureCloseException || (it is WebClientRequestException && it.cause is PrematureCloseException) || it is TimeoutException }

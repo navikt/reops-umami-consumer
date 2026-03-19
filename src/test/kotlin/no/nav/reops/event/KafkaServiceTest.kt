@@ -37,7 +37,7 @@ class KafkaServiceTest {
         val userAgent = "Mozilla/5.0 (Linux; Android 10; K)"
         val forwardedFor = "127.0.0.1"
 
-        whenever(filterService.filterEvent(eq(event))).thenReturn(filteredEvent)
+        whenever(filterService.filterEvent(eq(event), isNull())).thenReturn(filteredEvent)
 
         val record = consumerRecord(key = key, value = event)
 
@@ -45,11 +45,12 @@ class KafkaServiceTest {
             event = event,
             key = key,
             userAgent = userAgent,
+            optOutFilters = null,
             forwardedFor = forwardedFor,
             record = record
         )
 
-        verify(filterService).filterEvent(eq(event))
+        verify(filterService).filterEvent(eq(event), isNull())
 
         verify(umamiService).sendEvent(
             check { sent ->
@@ -58,6 +59,7 @@ class KafkaServiceTest {
                 assertThat(sent.payload.name).isEqualTo("besøk")
             },
             eq(userAgent),
+            isNull(),
             eq(forwardedFor)
         )
 
@@ -77,7 +79,7 @@ class KafkaServiceTest {
         val userAgent = "Mozilla/5.0 (Linux; Android 10; K)"
         val forwardedFor = "127.0.0.1"
 
-        whenever(filterService.filterEvent(eq(event))).thenReturn(filteredEvent)
+        whenever(filterService.filterEvent(eq(event), isNull())).thenReturn(filteredEvent)
 
         val record = consumerRecord(key = key, value = event)
 
@@ -85,11 +87,12 @@ class KafkaServiceTest {
             event = event,
             key = key,
             userAgent = userAgent,
+            optOutFilters = null,
             forwardedFor = forwardedFor,
             record = record
         )
 
-        verify(filterService).filterEvent(eq(event))
+        verify(filterService).filterEvent(eq(event), isNull())
 
         verify(umamiService).sendEvent(
             check { sent ->
@@ -98,6 +101,7 @@ class KafkaServiceTest {
                 assertThat(sent.payload.name).isNull()
             },
             eq(userAgent),
+            isNull(),
             eq(forwardedFor)
         )
 
@@ -116,7 +120,7 @@ class KafkaServiceTest {
         val userAgent = "Mozilla/5.0 (Linux; Android 10; K)"
         val forwardedFor = "127.0.0.1"
 
-        whenever(filterService.filterEvent(eq(event))).thenThrow(RuntimeException("boom"))
+        whenever(filterService.filterEvent(eq(event), isNull())).thenThrow(RuntimeException("boom"))
 
         val record = consumerRecord(key = key, value = event)
 
@@ -125,13 +129,14 @@ class KafkaServiceTest {
                 event = event,
                 key = key,
                 userAgent = userAgent,
+                optOutFilters = null,
                 forwardedFor = forwardedFor,
                 record = record
             )
         }.isInstanceOf(RuntimeException::class.java)
 
-        verify(filterService).filterEvent(eq(event))
-        verify(umamiService, never()).sendEvent(any(), any(), any())
+        verify(filterService).filterEvent(eq(event), isNull())
+        verify(umamiService, never()).sendEvent(any(), any(), anyOrNull(), anyOrNull())
 
         val success = meterRegistry.find("kafka_events_processed_total").tag("result", "success").counter()
         val failure = meterRegistry.find("kafka_events_processed_total").tag("result", "failure").counter()

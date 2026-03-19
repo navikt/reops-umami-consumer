@@ -1,6 +1,7 @@
 package no.nav.reops.filter
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import no.nav.reops.event.OptOutFilter
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -354,7 +355,7 @@ class FilterServiceRedactionRulesTest {
     }
 
     @Test
-    fun `filterEvent redacts uuid on all fields except website`() {
+    fun `filterEvent redacts uuid on all fields except website and id`() {
         val service = filterService()
         val websiteId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
         val uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
@@ -387,7 +388,7 @@ class FilterServiceRedactionRulesTest {
         assertEquals(websiteId, out.payload.website)
 
         // all other top-level string fields have the uuid redacted
-        assertEquals("[PROXY-UUID]", out.payload.id)
+        assertEquals(uuid, out.payload.id)  // id is preserved as-is (not redacted)
         assertEquals("[PROXY-UUID]", out.payload.hostname)
         assertEquals("[PROXY-UUID]", out.payload.screen)
         assertEquals("[PROXY-UUID]", out.payload.language)
@@ -403,5 +404,65 @@ class FilterServiceRedactionRulesTest {
 
         // "website" key in data is preserved (via KeyPolicy preservedKeys)
         assertEquals(uuid, data.get("website").asString())
+    }
+
+    @Test
+    fun `filterEvent preserves uuid everywhere when opt-out uuid is active`() {
+        val service = filterService()
+        val websiteId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+        val uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+        val base = TestEventFactory.minimalEvent()
+        val event = base.copy(
+            type = "event", payload = base.payload.copy(
+                website = websiteId,
+                hostname = uuid,
+                screen = uuid,
+                language = uuid,
+                title = uuid,
+                url = "https://example.com/page/$uuid",
+                referrer = "https://example.com/ref/$uuid",
+                name = uuid,
+                data = TestEventFactory.jsonNode(
+                    mapOf(
+                        "some_field" to uuid,
+                        "nested" to mapOf("deep" to uuid),
+                        "website" to uuid
+                    )
+                )
+            )
+        )
+
+        val out = service.filterEvent(event, listOf(OptOutFilter.UUID))
+
+        // website field is always preserved
+        assertEquals(websiteId, out.payload.website)
+
+        // all top-level string fields preserve their uuid values
+        assertEquals(uuid, out.payload.hostname)
+        assertEquals(uuid, out.payload.screen)
+        assertEquals(uuid, out.payload.language)
+        assertEquals(uuid, out.payload.title)
+        assertEquals("https://example.com/page/$uuid", out.payload.url)
+        assertEquals("https://example.com/ref/$uuid", out.payload.referrer)
+        assertEquals(uuid, out.payload.name)
+
+        // uuid inside data fields is preserved
+        val data = out.payload.data!!
+        assertEquals(uuid, data.get("some_field").asString())
+        assertEquals(uuid, data.get("nested").get("deep").asString())
+        assertEquals(uuid, data.get("website").asString())
+    }
+
+    @Test
+    fun `filterEvent still redacts non-uuid patterns when opt-out uuid is active`() {
+        val service = filterService()
+
+        val event = TestEventFactory.eventWithData("fnr=12345678910 email=john@example.com")
+        val out = service.filterEvent(event, listOf(OptOutFilter.UUID))
+        val outText = out.payload.data!!.get("text").asString()
+
+        assertTrue(outText.contains("[PROXY-FNR]"))
+        assertTrue(outText.contains("[PROXY-EMAIL]"))
     }
 }

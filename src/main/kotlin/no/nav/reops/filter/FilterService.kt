@@ -2,6 +2,7 @@ package no.nav.reops.filter
 
 import io.micrometer.core.instrument.MeterRegistry
 import no.nav.reops.event.Event
+import no.nav.reops.event.OptOutFilter
 import org.springframework.stereotype.Service
 import io.micrometer.core.instrument.Counter
 import org.slf4j.LoggerFactory
@@ -11,12 +12,13 @@ class FilterService(meterRegistry: MeterRegistry) {
     private val rules: List<RedactionRule> = RuleSetFactory.create(meterRegistry)
     private val keyPolicy: KeyPolicy = DefaultPolicies.keyPolicy()
     private val urlPolicy: UrlPolicy = DefaultPolicies.urlPolicy()
-    private val redactor = Redactor(rules)
 
-    fun filterEvent(event: Event): Event {
+    fun filterEvent(event: Event, optOutFilters: List<OptOutFilter>? = null): Event {
         val excludeKeys = DefaultPolicies.defaultFilter
-        LOG.debug("Exclude filters for this event: {}", excludeKeys)
+        val excludedLabels = optOutFilters.toExcludedLabels()
+        LOG.debug("Exclude filters for this event: {}, excluded labels: {}", excludeKeys, excludedLabels)
 
+        val redactor = Redactor(rules, excludedLabels)
         val p = event.payload
         val traverser = Traverser(
             keyPolicy = keyPolicy, urlPolicy = urlPolicy, redactor = redactor, excludeKeys = excludeKeys
@@ -24,26 +26,33 @@ class FilterService(meterRegistry: MeterRegistry) {
 
         val sanitized = p.copy(
             website = p.website,
-            id = p.id.redactedUnlessExcluded("id", excludeKeys),
-            hostname = p.hostname.redactedUnlessExcluded("hostname", excludeKeys),
-            screen = p.screen.redactedUnlessExcluded("screen", excludeKeys),
-            language = p.language.redactedUnlessExcluded("language", excludeKeys),
-            title = p.title.redactedUnlessExcluded("title", excludeKeys),
-            url = p.url.redactedUnlessExcluded("url", excludeKeys),
-            referrer = p.referrer.redactedUnlessExcluded("referrer", excludeKeys),
-            name = p.name.redactedUnlessExcluded("name", excludeKeys),
+            id = p.id,
+            hostname = p.hostname.redactedUnlessExcluded("hostname", excludeKeys, redactor),
+            screen = p.screen.redactedUnlessExcluded("screen", excludeKeys, redactor),
+            language = p.language.redactedUnlessExcluded("language", excludeKeys, redactor),
+            title = p.title.redactedUnlessExcluded("title", excludeKeys, redactor),
+            url = p.url.redactedUnlessExcluded("url", excludeKeys, redactor),
+            referrer = p.referrer.redactedUnlessExcluded("referrer", excludeKeys, redactor),
+            name = p.name.redactedUnlessExcluded("name", excludeKeys, redactor),
             data = if ("data" in excludeKeys) p.data else p.data?.let { traverser.transform(it) })
 
         return event.copy(payload = sanitized)
     }
 
-    private fun String?.redactedUnlessExcluded(field: String, excludeKeys: Set<String>): String? {
+    private fun String?.redactedUnlessExcluded(field: String, excludeKeys: Set<String>, redactor: Redactor): String? {
         if (field in excludeKeys) return this
         return this?.let { urlPolicy.redactUrl(it, redactor) }
     }
 
     private companion object {
         private val LOG = LoggerFactory.getLogger(FilterService::class.java)
+
+        private val OPT_OUT_LABEL_MAP: Map<OptOutFilter, String> = mapOf(
+            OptOutFilter.UUID to "PROXY-UUID"
+        )
+
+        private fun List<OptOutFilter>?.toExcludedLabels(): Set<String> =
+            this?.mapNotNull { OPT_OUT_LABEL_MAP[it] }?.toSet() ?: emptySet()
     }
 }
 
