@@ -61,6 +61,18 @@ class OptOutFilterTest {
     }
 
     @Test
+    fun `parseHeader parses JSON array format`() {
+        val result = OptOutFilter.parseHeader("""["uuid"]""")
+        assertEquals(listOf(OptOutFilter.UUID), result)
+    }
+
+    @Test
+    fun `parseHeader parses JSON array with multiple entries`() {
+        val result = OptOutFilter.parseHeader("""["uuid", "stuff"]""")
+        assertEquals(listOf(OptOutFilter.UUID), result)
+    }
+
+    @Test
     fun `parseHeader accepts header at max length`() {
         val value = "a".repeat(50)
         assertNull(OptOutFilter.parseHeader(value))

@@ -17,9 +17,11 @@ enum class OptOutFilter(@get:JsonValue val value: String) {
                 "x-opt-out-filters header exceeds $MAX_HEADER_LENGTH characters"
             }
 
-            val filters = trimmed.split(',')
+            val stripped = trimmed.removePrefix("[").removeSuffix("]")
+
+            val filters = stripped.split(',')
                 .asSequence()
-                .map { it.trim().lowercase() }
+                .map { it.trim().removeSurrounding("\"").trim().lowercase() }
                 .filter { it.isNotEmpty() }
                 .mapNotNull { byValue[it] }
                 .distinct()
