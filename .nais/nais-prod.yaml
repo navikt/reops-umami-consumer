@@ -21,7 +21,7 @@ spec:
       kafka:
         topic: reops-insight-event
         consumerGroup: reops-umami-consumer
-        threshold: 5000
+        threshold: 1000
   prometheus:
     enabled: true
     path: /internal/prometheus

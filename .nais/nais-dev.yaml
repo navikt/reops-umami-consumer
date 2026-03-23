@@ -17,7 +17,11 @@ spec:
   replicas:
     min: 2
     max: 4
-    cpuThresholdPercentage: 80
+    scalingStrategy:
+      kafka:
+        topic: reops-insight-event
+        consumerGroup: reops-umami-consumer
+        threshold: 1000
   prometheus:
     enabled: true
     path: /internal/prometheus
