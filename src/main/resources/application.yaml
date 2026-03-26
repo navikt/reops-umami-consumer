@@ -3,7 +3,6 @@ spring:
     name: reops-umami-consumer
   kafka:
     bootstrap-servers: localhost:9094
-    topic: test2
     listener:
       ack-mode: record
       concurrency: 10
