@@ -32,6 +32,12 @@ class KafkaService(
     private val kafkaEventsDlt: Counter =
         Counter.builder("kafka_events_dlt_total").register(meterRegistry)
 
+    private val kafkaEventsByType: Map<String, Counter> = mapOf(
+        "event" to Counter.builder("kafka_events_by_type_total").tag("type", "event").register(meterRegistry),
+        "identify" to Counter.builder("kafka_events_by_type_total").tag("type", "identify").register(meterRegistry),
+        "unknown" to Counter.builder("kafka_events_by_type_total").tag("type", "unknown").register(meterRegistry),
+    )
+
     @RetryableTopic(
         attempts = "2", // Dont change! - creates more topics
         backOff = BackOff(delayString = "\${spring.kafka.retry.backoff-delay:300000}"), // Dont add more backoff! - creates more topics
@@ -54,6 +60,7 @@ class KafkaService(
     ) {
         try {
             LOG.info("Received event with key={} website={} offset={} partition={}", key, event.payload.website, record.offset(), record.partition())
+            kafkaEventsByType.getOrDefault(event.type, kafkaEventsByType.getValue("unknown")).increment()
             val parsedOptOutFilters = OptOutFilter.parseHeader(optOutFilters)
             val filteredEvent = filterService.filterEvent(event, parsedOptOutFilters)
 

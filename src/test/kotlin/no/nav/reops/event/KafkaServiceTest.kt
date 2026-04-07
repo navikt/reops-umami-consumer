@@ -68,6 +68,64 @@ class KafkaServiceTest {
 
         assertThat(success?.count()).isEqualTo(1.0)
         assertThat(failure?.count()).isEqualTo(0.0)
+
+        val eventTypeCounter = meterRegistry.find("kafka_events_by_type_total").tag("type", "event").counter()
+        assertThat(eventTypeCounter?.count()).isEqualTo(1.0)
+    }
+
+    @Test
+    fun `eventListen - identify type increments identify counter`() {
+        val event = sampleEvent(name = null, type = "identify")
+        val filteredEvent = sampleEvent(name = null, type = "identify")
+
+        val key = "key"
+        val userAgent = "Mozilla/5.0"
+        val forwardedFor = "127.0.0.1"
+
+        whenever(filterService.filterEvent(eq(event), isNull())).thenReturn(filteredEvent)
+
+        val record = consumerRecord(key = key, value = event)
+
+        kafkaService.eventListen(
+            event = event,
+            key = key,
+            userAgent = userAgent,
+            optOutFilters = null,
+            forwardedFor = forwardedFor,
+            record = record
+        )
+
+        val identifyCounter = meterRegistry.find("kafka_events_by_type_total").tag("type", "identify").counter()
+        assertThat(identifyCounter?.count()).isEqualTo(1.0)
+
+        val eventCounter = meterRegistry.find("kafka_events_by_type_total").tag("type", "event").counter()
+        assertThat(eventCounter?.count()).isEqualTo(0.0)
+    }
+
+    @Test
+    fun `eventListen - unknown type increments other counter`() {
+        val event = sampleEvent(name = null, type = "unknown_type")
+        val filteredEvent = sampleEvent(name = null, type = "unknown_type")
+
+        val key = "key"
+        val userAgent = "Mozilla/5.0"
+        val forwardedFor = "127.0.0.1"
+
+        whenever(filterService.filterEvent(eq(event), isNull())).thenReturn(filteredEvent)
+
+        val record = consumerRecord(key = key, value = event)
+
+        kafkaService.eventListen(
+            event = event,
+            key = key,
+            userAgent = userAgent,
+            optOutFilters = null,
+            forwardedFor = forwardedFor,
+            record = record
+        )
+
+        val otherCounter = meterRegistry.find("kafka_events_by_type_total").tag("type", "unknown").counter()
+        assertThat(otherCounter?.count()).isEqualTo(1.0)
     }
 
     @Test
@@ -149,8 +207,8 @@ class KafkaServiceTest {
         "topic", 0, 0L, 0L, TimestampType.CREATE_TIME, 0, 0, key, value, RecordHeaders(), Optional.empty()
     )
 
-    private fun sampleEvent(name: String?): Event = Event(
-        type = "event", payload = Event.Payload(
+    private fun sampleEvent(name: String?, type: String = "event"): Event = Event(
+        type = type, payload = Event.Payload(
             website = UUID.fromString("1dbfe4e9-bf8b-45d9-9305-928f22200bc0"),
             hostname = "felgen.intern.nav.no",
             screen = "172x111",
