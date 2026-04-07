@@ -95,7 +95,5 @@ class KafkaService(
 
 private fun Event.normalizedForUmami(): Event {
     val normalizedName = this.payload.name?.trim().takeUnless { it.isNullOrEmpty() }
-    return this.copy(
-        type = "event", payload = this.payload.copy(name = normalizedName)
-    )
+    return this.copy(payload = this.payload.copy(name = normalizedName))
 }
