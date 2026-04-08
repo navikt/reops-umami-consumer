@@ -15,7 +15,7 @@ spec:
     path: /internal/health
     initialDelay: 5
   replicas:
-    min: 3
+    min: 2
     max: 10
     scalingStrategy:
       kafka:
