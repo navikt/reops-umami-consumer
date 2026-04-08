@@ -15,13 +15,13 @@ spec:
     path: /internal/health
     initialDelay: 5
   replicas:
-    min: 5
+    min: 3
     max: 10
     scalingStrategy:
       kafka:
-        topic: reops-insight-event
+        topic: team-researchops.analytics-raw
         consumerGroup: reops-umami-consumer
-        threshold: 1000
+        threshold: 100
   prometheus:
     enabled: true
     path: /internal/prometheus
