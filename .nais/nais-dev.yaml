@@ -20,7 +20,7 @@ spec:
     scalingStrategy:
       kafka:
         topic: team-researchops.analytics-raw
-        consumerGroup: reops-umami-consumer
+        consumerGroup: reops-umami-consumer-group
         threshold: 100
   prometheus:
     enabled: true
