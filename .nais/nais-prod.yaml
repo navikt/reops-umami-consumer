@@ -21,7 +21,7 @@ spec:
       kafka:
         topic: team-researchops.analytics-raw
         consumerGroup: reops-umami-consumer-group
-        threshold: 100
+        threshold: 1000
   prometheus:
     enabled: true
     path: /internal/prometheus
