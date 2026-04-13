@@ -22,6 +22,10 @@ spec:
         topic: team-researchops.analytics-raw
         consumerGroup: reops-umami-consumer-group
         threshold: 100
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: sdk
   prometheus:
     enabled: true
     path: /internal/prometheus
