@@ -25,7 +25,13 @@ logging:
       console: logstash
 
 management:
-  otlp:
+  opentelemetry:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
-      transport: grpc
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+          transport: grpc
+  otlp:
+    metrics:
+      export:
+        enabled: false
