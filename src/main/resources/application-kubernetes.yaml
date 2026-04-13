@@ -23,3 +23,9 @@ logging:
   structured:
     format:
       console: logstash
+
+management:
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      transport: grpc
