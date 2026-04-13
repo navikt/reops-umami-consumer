@@ -6,6 +6,9 @@ spring:
     listener:
       ack-mode: record
       concurrency: 5
+      observation-enabled: true
+    template:
+      observation-enabled: true
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
