@@ -25,11 +25,6 @@ logging:
       console: logstash
 
 management:
-  opentelemetry:
-    tracing:
-      export:
-        otlp:
-          transport: grpc
   otlp:
     metrics:
       export:
