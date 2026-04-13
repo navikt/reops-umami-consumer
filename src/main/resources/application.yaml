@@ -50,6 +50,10 @@ management:
         otlp:
           endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
           transport: grpc
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 reops:
   umami:
