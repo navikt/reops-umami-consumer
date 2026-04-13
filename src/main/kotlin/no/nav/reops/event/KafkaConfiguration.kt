@@ -18,7 +18,8 @@ class KafkaConfiguration(
 
     @Bean("defaultRetryTopicKafkaTemplate")
     fun kafkaTemplate(): KafkaTemplate<String, Event> {
-        return KafkaTemplate(DefaultKafkaProducerFactory(kafkaProperties.buildProducerProperties()))
+        return KafkaTemplate<String, Event>(DefaultKafkaProducerFactory(kafkaProperties.buildProducerProperties()))
+            .apply { setObservationEnabled(true) }
     }
 
     @Bean
