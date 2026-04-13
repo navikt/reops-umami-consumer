@@ -1,5 +1,6 @@
 package no.nav.reops.umami
 
+import io.micrometer.observation.ObservationRegistry
 import io.netty.channel.ChannelOption
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -15,7 +16,7 @@ class UmamiClientConfiguration(
     @Value("\${reops.umami.url}") private val umamiUrl: String
 ) {
     @Bean
-    fun umamiClient(): WebClient {
+    fun umamiClient(observationRegistry: ObservationRegistry): WebClient {
         val connectionProvider = ConnectionProvider.builder("umami")
             .maxConnections(100)
             .pendingAcquireMaxCount(1000)
@@ -31,6 +32,7 @@ class UmamiClientConfiguration(
             .responseTimeout(Duration.ofSeconds(10))
 
         return WebClient.builder()
+            .observationRegistry(observationRegistry)
             .baseUrl(umamiUrl)
             .clientConnector(ReactorClientHttpConnector(httpClient))
             .build()

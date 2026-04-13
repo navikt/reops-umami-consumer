@@ -1,6 +1,8 @@
 spring:
   application:
     name: reops-umami-consumer
+  reactor:
+    context-propagation: auto
   kafka:
     bootstrap-servers: localhost:9094
     listener:
