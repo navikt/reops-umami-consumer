@@ -15,7 +15,7 @@ spec:
     path: /internal/health
     initialDelay: 5
   replicas:
-    min: 1
+    min: 2
     max: 3
     scalingStrategy:
       cpu:
@@ -35,7 +35,7 @@ spec:
     limits:
       memory: 256Mi
     requests:
-      cpu: "400m"
+      cpu: "200m"
       memory: 124Mi
   kafka:
     pool: nav-dev
